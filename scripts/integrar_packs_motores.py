@@ -76,9 +76,29 @@ FORD_VARIANT_SLOTS = [
     ["ultra_realism_ignition", "ultra_realism_ignition_stock", "Distributor / Ignition"],
 ]
 
+CEEP_CARB_LABELS = {
+    "carburetor",
+    "carburetors",
+    "cross-ram carburetors",
+    "turbo manifold",
+    "turbo intake manifold",
+    "twincharger manifold",
+    "supercharger manifold",
+    "supercharger intake",
+}
+CEEP_INTAKE_GEOMETRY_LABELS = {
+    "intake manifold",
+    "intake",
+    "turbo manifold",
+    "turbo intake manifold",
+    "twincharger manifold",
+    "supercharger manifold",
+    "supercharger intake",
+    "procharger manifold",
+}
 CEEP_NATIVE_CATEGORY_LABELS = {
-    "ultra_realism_carburetor": {"carburetor", "carburetors"},
-    "ultra_realism_intake_geometry": {"intake manifold"},
+    "ultra_realism_carburetor": CEEP_CARB_LABELS,
+    "ultra_realism_intake_geometry": CEEP_INTAKE_GEOMETRY_LABELS,
     "ultra_realism_carb_spacer": {
         "intake spacer",
         "spacer",
@@ -94,10 +114,44 @@ CEEP_NATIVE_CATEGORY_LABELS = {
     "ultra_realism_ignition": {"distributor"},
     "ultra_realism_oil_system": {"oil pan"},
 }
+FORD_INTAKE_GEOMETRY_LABELS = {
+    "intake",
+    "intake pipe",
+    "intake & exhaust",
+}
 FORD_NATIVE_CATEGORY_LABELS = {
     "ultra_realism_rotating_response": {"flywheel"},
     "ultra_realism_oil_system": {"oil pan"},
+    "ultra_realism_intake_geometry": FORD_INTAKE_GEOMETRY_LABELS,
 }
+FORD_CARB_INTAKE_KEYWORDS = (
+    "carburetor",
+    " carb",
+    "carb-",
+    "-carb",
+    "holley",
+    "edelbrock",
+    "weber",
+    "2bbl",
+    "4bbl",
+    "quad",
+    "twin carb",
+    "six pack",
+    "sixpack",
+    "turbo",
+    "supercharger",
+    "twincharger",
+    "blower",
+    "procharger",
+    "itb",
+    "throttle body",
+    "individual throttle",
+)
+FORD_CARB_INTAKE_EXCLUDES = (
+    "diesel",
+    "electric",
+    "efi only",
+)
 
 
 def matching_delimiter(text: str, start: int, open_char: str, close_char: str) -> int | None:
@@ -1007,14 +1061,21 @@ def make_filter_part(
     }
 
 
+def ford_intake_supports_ure_carb(name: str) -> bool:
+    lowered = name.lower()
+    if any(token in lowered for token in FORD_CARB_INTAKE_EXCLUDES):
+        return False
+    return any(keyword in lowered for keyword in FORD_CARB_INTAKE_KEYWORDS)
+
+
 def ford_carb_owner_specs(inventory: dict) -> list[dict]:
-    intake_types = set(native_target_types(inventory, {"intake"}))
+    intake_types = set(native_target_types(inventory, FORD_INTAKE_GEOMETRY_LABELS))
     specs = []
     seen = set()
     for intake_type in sorted(intake_types):
         for record in inventory["definitions"].get(intake_type, []):
-            name = record["name"].lower()
-            if "carburetor" not in name and " carb" not in name:
+            name = record["name"]
+            if not ford_intake_supports_ure_carb(name):
                 continue
             identity = (record["filename"], record["partKey"])
             if identity in seen:
@@ -1214,7 +1275,7 @@ def native_parts_files(mode: str, parts: dict[str, dict]) -> dict[str, bytes]:
 def patch_ceep_hierarchy(text: str, inventory: dict) -> tuple[str, dict[str, int]]:
     short_types = set(native_target_types(inventory, {"short block"}))
     head_types = set(native_target_types(inventory, {"cylinder head"}))
-    carb_types = set(native_target_types(inventory, {"carburetor", "carburetors"}))
+    carb_types = set(native_target_types(inventory, CEEP_CARB_LABELS))
     stats: dict[str, int] = {}
 
     text, parts, rows = patch_matching_parts(

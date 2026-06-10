@@ -102,7 +102,7 @@ def check_lua_markers() -> None:
 def check_version() -> None:
     info = json.loads(INFO.read_text(encoding="utf-8"))
     version = info.get("version", "")
-    if version != "0.16.0":
+    if version != "0.16.1":
         raise SystemExit(f"[FAIL] unexpected version {version}")
     print(f"[OK] version {version}")
 
@@ -151,6 +151,34 @@ def check_pack_integration(path: Path, expected_mode: str) -> None:
     print(
         f"[OK] {path.name} integrationMode={expected_mode} controllers={controller_hits} "
         f"ultraEngine={ultra_engine_hits}"
+    )
+
+
+def check_pack_intake_coverage(path: Path, mode: str) -> None:
+    marker_name = "ultra_realism_integration.json"
+    with zipfile.ZipFile(path) as zf:
+        if marker_name not in zf.namelist():
+            raise SystemExit(f"[FAIL] {path.name} missing {marker_name}")
+        marker = json.loads(zf.read(marker_name).decode("utf-8"))
+    counts = marker.get("nativeCategoryTargetCounts", {})
+    carbs = int(counts.get("ultra_realism_carburetor", 0))
+    intake = int(counts.get("ultra_realism_intake_geometry", 0))
+    if mode == "ceep":
+        if carbs < 90:
+            raise SystemExit(
+                f"[FAIL] {path.name} expected >=90 carb slot targets, got {carbs}"
+            )
+        if intake < 55:
+            raise SystemExit(
+                f"[FAIL] {path.name} expected >=55 intake geometry targets, got {intake}"
+            )
+    else:
+        if intake < 60:
+            raise SystemExit(
+                f"[FAIL] {path.name} expected >=60 Ford intake geometry targets, got {intake}"
+            )
+    print(
+        f"[OK] {path.name} intake coverage carbs={carbs} intakeGeometry={intake}"
     )
 
 
@@ -222,6 +250,7 @@ def main() -> None:
                 check_zip(pack, PACK_REQUIRED_ASSETS)
                 if index == 1:
                     check_pack_integration(pack, mode)
+                    check_pack_intake_coverage(pack, mode)
         if index == 1 and (not ZIP_CEEP.exists() or not ZIP_FORD.exists()):
             raise SystemExit(
                 "[FAIL] patched CEEP/Ford ZIPs required for release validation "

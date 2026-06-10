@@ -19,7 +19,7 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.16.0"
+local MOD_VERSION = "0.16.1"
 
 local cfg = {}
 local st = {}
