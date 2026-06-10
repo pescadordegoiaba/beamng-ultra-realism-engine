@@ -7,7 +7,7 @@
 // ]
 
 ["ultraRealismEngine", {
-    "integrationMode": "generic",
+    "integrationMode": "auto",
     "fuelingMode": "auto",
     "autoDetectEngine": true,
     "autoFuelingMode": true,

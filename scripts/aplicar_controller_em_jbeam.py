@@ -17,7 +17,7 @@ import re
 from pathlib import Path
 
 CONTROLLER_LINE = '''            ["ultraRealismEngine", {
-                "integrationMode": "generic",
+                "integrationMode": "auto",
                 "fuelingMode": "auto",
                 "autoDetectEngine": true,
                 "autoFuelingMode": true,

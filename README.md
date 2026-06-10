@@ -40,17 +40,22 @@ python3 scripts/gerar_zip_mod.py
 # 2) Validar (Lua, física offline, integridade)
 python3 scripts/validar_projeto.py 1
 
-# 3) Instalar no perfil BeamNG (detecta Linux nativo + Heroic/Wine)
-python3 scripts/instalar_mod_beamng.py --all-targets
+# 3) Patch CEEP/Ford (obrigatório para integração nativa)
+python3 scripts/integrar_packs_motores.py \
+  --ceep /caminho/classic_engine_expansion_pack.zip \
+  --ford /caminho/Ford_Engine_Pack_JITTERUSA.zip
+
+# 4) Instalar os 3 ZIPs (main + packs patchados; detecta Linux + Heroic/Wine)
+python3 scripts/instalar_mod_beamng.py --all-targets --with-packs
 ```
 
 ### Integração CEEP / Ford (obrigatória para uso “completo”)
 
 Sem os packs patchados, o controller **não** aparece na árvore de peças nativa desses motores.
 
-1. Obtenha os mods originais no fórum BeamNG (CEEP — JΛVI; Ford — JITTERUSA).
+1. Obtenha os mods originais no fórum BeamNG (CEEP — JΛVI; Ford — JITTERUSA) — **apenas como entrada** do script de patch.
 2. Siga [patched_mods/README.md](patched_mods/README.md).
-3. Instale com `python3 scripts/instalar_mod_beamng.py --all-targets --with-packs`.
+3. No jogo, **desative** os ZIPs originais e use **somente** os patchados + `UltraRealismEngine_Prototype.zip`.
 
 ---
 
@@ -130,7 +135,7 @@ UltraRealismEngine|diag parts=... carb=... torque=... afr=... demand=... cfm=...
 
 ## Estrutura de versão
 
-Versão canônica: `UltraRealismEngine_Prototype/mod_info/info.json` (atualmente **0.14.8**).
+Versão canônica: `UltraRealismEngine_Prototype/mod_info/info.json` (atualmente **0.14.11**).
 
 ---
 

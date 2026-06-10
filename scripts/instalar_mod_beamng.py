@@ -90,7 +90,16 @@ def main() -> None:
     missing = [path for path in zips if not path.exists()]
     if missing:
         joined = "\n".join(str(path) for path in missing)
-        raise SystemExit(f"[ERRO] ZIP(s) não encontrado(s):\n{joined}\nExecute scripts/gerar_zip_mod.py primeiro.")
+        hint = "scripts/gerar_zip_mod.py"
+        if any(path in DEFAULT_PACKS for path in missing):
+            hint += " e scripts/integrar_packs_motores.py --ceep ... --ford ..."
+        raise SystemExit(f"[ERRO] ZIP(s) não encontrado(s):\n{joined}\nExecute {hint} primeiro.")
+
+    if args.all_targets and not all(path.exists() for path in DEFAULT_PACKS):
+        print(
+            "[AVISO] Packs CEEP/Ford patched ausentes. "
+            "Integração nativa incompleta — veja patched_mods/README.md"
+        )
 
     if args.mods_dir:
         targets = [args.mods_dir.expanduser().resolve()]

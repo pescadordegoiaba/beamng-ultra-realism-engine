@@ -19,7 +19,7 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.14.10"
+local MOD_VERSION = "0.14.11"
 
 local cfg = {}
 local st = {}
@@ -202,7 +202,7 @@ local function clearFalseStallState(physicsRPM, torqueFactor, throttle)
   if starterEngaged > 0 then return end
   local stallGuardRPM = getNativeStallGuardRPM()
   local severeFailure = math.max(st.vaporLock or 0, st.carbIce or 0, st.misfire or 0)
-  if physicsRPM > stallGuardRPM * 0.95 and torqueFactor > 0.55 and severeFailure < 0.82 and throttle < 0.45 then
+  if physicsRPM > stallGuardRPM * 0.95 and torqueFactor > 0.55 and severeFailure < 0.82 and throttle < 0.72 then
     pcall(function()
       engine.isStalled = false
       engine.stallTimer = 1
@@ -252,8 +252,24 @@ local function publishNativeRunningState(physicsRPM, appliedTorqueFactor, thrott
   end
 end
 
+local function resolveIntegrationMode()
+  local configured = string.lower(tostring(cfg.integrationMode or "generic"))
+  if configured == "ceep" or configured == "ford" then return configured end
+  if configured == "auto" or configured == "generic" then
+    local text = getActivePartsText()
+    if text:find("ceep", 1, true) or text:find("classic_engine", 1, true) then return "ceep" end
+    if text:find("ford_engine", 1, true) or text:find("jitter", 1, true) then return "ford" end
+  end
+  return configured
+end
+
+local function getIntegrationMode()
+  return st.resolvedIntegrationMode or cfg.integrationMode or "generic"
+end
+
 local function usesNativePartSync()
-  return cfg.integrationMode == "ceep" or cfg.integrationMode == "ford"
+  local mode = getIntegrationMode()
+  return mode == "ceep" or mode == "ford"
 end
 
 local function getPartData(partName)
@@ -446,6 +462,7 @@ local function syncActivePartsState()
   local signature = computeActivePartsSignature()
   if signature == st.activePartsSignature then return false end
   st.activePartsSignature = signature
+  st.resolvedIntegrationMode = resolveIntegrationMode()
   st.carbSetupScanned = false
   st.enginePartsAnalyzed = false
   return true
@@ -1879,9 +1896,9 @@ local function markEngineDamage(kind)
     pcall(function() if damageTracker then damageTracker.setDamage("engine", "headGasketDamaged", true, true) end end)
   elseif kind == "bearings" and not st.rodBearingDamaged then
     st.rodBearingDamaged = true
+    st.engineFrictionDamageMult = finiteNonNegative((st.engineFrictionDamageMult or 1) * 2.6, 1)
     pcall(function() if engine.thermals then engine.thermals.connectingRodBearingsDamaged = true end end)
     pcall(function() if damageTracker then damageTracker.setDamage("engine", "rodBearingsDamaged", true, true) end end)
-    pcall(function() if engine.scaleFriction then engine:scaleFriction(2.6) end end)
   end
 end
 
@@ -1968,6 +1985,54 @@ local function updateThermalAndFailures(dt, rpm, throttle, tempC, pressurePa, hu
   end
 end
 
+local function captureEngineFrictionBaseline()
+  if not engine or st.baselineCaptured then return end
+  st.baseFriction = engine.friction
+  st.baseDynamicFriction = engine.dynamicFriction
+  st.baselineCaptured = true
+end
+
+local function restoreNativeEngineTorqueState()
+  if not engine then engine = getMainEngine() end
+  if not engine then return end
+  if engine.outputTorqueState ~= nil then
+    engine.outputTorqueState = 1
+  end
+  if type(engine.setOutputTorqueState) == "function" then
+    pcall(function() engine:setOutputTorqueState(1) end)
+  end
+  st.lastAppliedEngineEffectFactor = 1
+  st.appliedViaOutputTorqueState = engine.outputTorqueState ~= nil
+end
+
+local function restoreNativeEngineFriction()
+  if not engine then engine = getMainEngine() end
+  if not engine or not st.baselineCaptured then return end
+  if st.baseFriction ~= nil and engine.friction ~= nil then
+    engine.friction = st.baseFriction
+  end
+  if st.baseDynamicFriction ~= nil and engine.dynamicFriction ~= nil then
+    engine.dynamicFriction = st.baseDynamicFriction
+  end
+end
+
+local function applyEngineFrictionDamage()
+  if not engine or not st.baselineCaptured then return end
+  local mult = finiteNonNegative(st.engineFrictionDamageMult or 1, 1)
+  if mult <= 1.001 then return end
+  if st.baseFriction ~= nil and engine.friction ~= nil then
+    engine.friction = st.baseFriction * mult
+  end
+  if st.baseDynamicFriction ~= nil and engine.dynamicFriction ~= nil then
+    engine.dynamicFriction = st.baseDynamicFriction * mult
+  end
+end
+
+local function engineSupportsTorqueScaling()
+  if not engine then engine = getMainEngine() end
+  return engine and engine.outputTorqueState ~= nil
+end
+
 local function applyTorqueAndFriction(torqueFactor)
   if not engine or not cfg.enableEngineEffect then return end
 
@@ -1975,41 +2040,46 @@ local function applyTorqueAndFriction(torqueFactor)
   st.lastCalculatedTorqueFactor = torqueFactor
   st.engineEffectTarget = torqueFactor
 
-  if not cfg.enableFrictionFallback then return end
+  captureEngineFrictionBaseline()
 
-  if not st.baselineCaptured then
-    st.baseFriction = engine.friction
-    st.baseDynamicFriction = engine.dynamicFriction
-    st.baselineCaptured = true
+  if cfg.enableFrictionFallback then
+    if st.baseFriction ~= nil and engine.friction ~= nil then
+      local loss = clamp(1 - torqueFactor, 0, 1)
+      pcall(function() engine.friction = st.baseFriction + cfg.frictionPenaltyNm * loss end)
+    end
+    if st.baseDynamicFriction ~= nil and engine.dynamicFriction ~= nil then
+      local rpm = getElectricsValue("rpm", getElectricsValue("engineRPM", 1000))
+      local loss = clamp(1 - torqueFactor, 0, 1)
+      pcall(function() engine.dynamicFriction = st.baseDynamicFriction + cfg.dynamicFrictionPenalty * loss * clamp(rpm / 6000, 0.1, 1.4) end)
+    end
   end
 
-  if st.baseFriction ~= nil and engine.friction ~= nil then
-    local loss = clamp(1 - torqueFactor, 0, 1)
-    pcall(function() engine.friction = st.baseFriction + cfg.frictionPenaltyNm * loss end)
-  end
-  if st.baseDynamicFriction ~= nil and engine.dynamicFriction ~= nil then
-    local rpm = getElectricsValue("rpm", getElectricsValue("engineRPM", 1000))
-    local loss = clamp(1 - torqueFactor, 0, 1)
-    pcall(function() engine.dynamicFriction = st.baseDynamicFriction + cfg.dynamicFrictionPenalty * loss * clamp(rpm / 6000, 0.1, 1.4) end)
-  end
+  applyEngineFrictionDamage()
 end
 
 local function applyEngineEffectCoef()
   if not engine then engine = getMainEngine() end
-  if not engine or not cfg.enableEngineEffect then return end
+  if not engine then return end
+
+  if not cfg.enableEngineEffect then
+    restoreNativeEngineTorqueState()
+    return
+  end
+
+  if not engineSupportsTorqueScaling() then
+    if not st.warnedNoOutputTorqueState then
+      st.warnedNoOutputTorqueState = true
+      log("W", "UltraRealismEngine", "outputTorqueState missing on mainEngine; torque scaling disabled")
+    end
+    return
+  end
 
   local target = finiteNonNegative(st.engineEffectTarget, 1) * finiteNonNegative(st.engineDamageTorqueCoef or 1, 1)
   -- BeamNG developers recommend outputTorqueState for real torque scaling.
-  -- Apply on both GFX and physics steps because the native engine may reset it.
-  if engine.outputTorqueState ~= nil then
-    engine.outputTorqueState = target
-    st.lastAppliedEngineEffectFactor = target
-    st.appliedViaOutputTorqueState = true
-  elseif engine.intakeAirDensityCoef ~= nil then
-    engine.intakeAirDensityCoef = target
-    st.lastAppliedEngineEffectFactor = target
-    st.appliedViaOutputTorqueState = false
-  end
+  -- intakeAirDensityCoef is reset every GFX frame by combustionEngine and must not be used here.
+  engine.outputTorqueState = target
+  st.lastAppliedEngineEffectFactor = target
+  st.appliedViaOutputTorqueState = true
   if type(engine.setOutputTorqueState) == "function" then
     pcall(function() engine:setOutputTorqueState(target) end)
   end
@@ -2210,6 +2280,7 @@ local function update(dt)
   applyTorqueAndFriction(appliedTorqueFactor)
   publishNativeRunningState(physicsRPM, appliedTorqueFactor, throttle)
   applyEngineEffectCoef()
+  clearFalseStallState(physicsRPM, appliedTorqueFactor, throttle)
 
   local fuelLps = fuelKgS / math.max(cfg.fuelDensityKgM3, 1) * 1000
   st.fuelUsedL = (st.fuelUsedL or 0) + fuelLps * dt
@@ -2413,6 +2484,8 @@ end
 local function reset()
   restoreSuspensionBeams()
   engine = getMainEngine()
+  restoreNativeEngineFriction()
+  restoreNativeEngineTorqueState()
   st = {
     choke = 0,
     knockRisk = 0,
@@ -2450,6 +2523,9 @@ local function reset()
     baselineCaptured = false,
     engineEffectTarget = 1,
     engineDamageTorqueCoef = 1,
+    engineFrictionDamageMult = 1,
+    resolvedIntegrationMode = resolveIntegrationMode(),
+    warnedNoOutputTorqueState = false,
     lastAppliedEngineEffectFactor = 1,
     runTime = 0,
     severeFailureTimer = 0,
@@ -2608,7 +2684,7 @@ local function init(jbeamData)
     MOD_VERSION,
     cfg.debugLog and "on" or "off",
     cfg.diagnosticLog and "on" or "off",
-    cfg.integrationMode
+    getIntegrationMode()
   ))
 end
 

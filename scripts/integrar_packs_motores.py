@@ -1403,6 +1403,11 @@ def main() -> None:
             raise SystemExit(f"[ERRO] ZIP nao encontrado: {source}")
         output = args.output_dir.expanduser().resolve() / output_name
         result = patch_zip(source, output, mode, config)
+        if result["engines"] < 1:
+            raise SystemExit(
+                f"[ERRO] {output.name}: nenhum motor recebeu hook ultraRealismEngine. "
+                "Verifique se o ZIP de origem é o pack CEEP/Ford correto."
+            )
         print(
             f"[OK] {output}: {result['engines']} motores, "
             f"{result['nativeParts']} pecas nativas URE, "

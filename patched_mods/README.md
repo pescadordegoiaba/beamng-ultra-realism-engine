@@ -4,10 +4,11 @@ Esta pasta guarda **ZIPs patchados** gerados por `scripts/integrar_packs_motores
 
 ## Pré-requisitos
 
-1. Instale no BeamNG (Mods Manager) os mods originais:
+1. Obtenha os mods originais (uso legal obrigatório):
    - **[CEEP] Classic Engine Expansion Pack** — autor **JΛVI** ([BeamNG resources](https://www.beamng.com/resources/))
    - **Ford Engine Pack JITTERUSA** — autor **JITTERUSA**
-2. Copie os ZIPs originais para esta pasta **ou** aponte o script para o caminho deles.
+2. Use os ZIPs originais **somente como entrada** do script abaixo — **não** deixe original + patchado ativos juntos no Mod Manager.
+3. Copie os ZIPs originais para esta pasta **ou** aponte o script para o caminho deles.
 
 ## Gerar os patches
 

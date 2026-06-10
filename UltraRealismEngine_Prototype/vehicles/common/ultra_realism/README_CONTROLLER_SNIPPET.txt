@@ -2,14 +2,23 @@ Este mod usa o controller Lua:
 
   lua/vehicle/controller/ultraRealismEngine.lua
 
-As pecas geradas ja aparecem no slot "Additional Modification" dos veiculos suportados.
+Para CEEP/Ford: use os packs patchados (scripts/integrar_packs_motores.py).
+O mod principal sozinho nao injeta hooks nos motores nativos desses packs.
 
 Para ativar em outro veiculo/mod unpacked, adicione dentro da secao "controller" do JBeam:
 
-  ["ultraRealismEngine", { "fuelingMode": "auto", "autoDetectEngine": true, "autoFuelingMode": true }]
+  ["ultraRealismEngine", {
+    "integrationMode": "auto",
+    "fuelingMode": "auto",
+    "autoDetectEngine": true,
+    "autoFuelingMode": true
+  }]
 
-Use o snippet completo em:
+CEEP/Ford patchados usam integrationMode "ceep" ou "ford" automaticamente.
+Modo "auto" detecta o pack pelas pecas instaladas.
+
+Snippet completo:
 
   jbeam_snippets/controller_ultra_realism_snippet.jbeam
 
-Nao existem ajustes em runtime nesta versao. O controller infere os parametros pelas pecas ativas e pelo ambiente.
+Nao existem ajustes em runtime nesta versao. O controller infere parametros pelas pecas ativas e pelo ambiente.

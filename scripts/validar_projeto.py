@@ -16,6 +16,12 @@ INFO = MOD_DIR / "mod_info" / "info.json"
 ZIP_MAIN = KIT_DIR / "UltraRealismEngine_Prototype.zip"
 ZIP_CEEP = KIT_DIR / "patched_mods" / "classic_engine_expansion_pack.zip"
 ZIP_FORD = KIT_DIR / "patched_mods" / "Ford_Engine_Pack_JITTERUSA.zip"
+PACK_REQUIRED_ASSETS = [
+    "vehicles/common/ultra_realism/carburetor_models.dae",
+    "vehicles/common/ultra_realism/carburetor_models.materials.json",
+    "vehicles/common/ultra_realism/carburetor_visual_manifest.json",
+    "ultra_realism_integration.json",
+]
 
 
 def run(cmd: list[str], label: str) -> None:
@@ -59,6 +65,8 @@ def check_lua_markers() -> None:
         "engineDamageTorqueCoef",
         "ure_failureTorqueFactor",
         "ure_performanceTorqueFactor",
+        "resolveIntegrationMode",
+        "restoreNativeEngineTorqueState",
     ]
     for marker in required:
         if marker not in text:
@@ -71,7 +79,7 @@ def check_lua_markers() -> None:
 def check_version() -> None:
     info = json.loads(INFO.read_text(encoding="utf-8"))
     version = info.get("version", "")
-    if version != "0.14.10":
+    if version != "0.14.11":
         raise SystemExit(f"[FAIL] unexpected version {version}")
     print(f"[OK] version {version}")
 
@@ -169,12 +177,14 @@ def main() -> None:
                     patch_materials_in_zip(pack)
         for pack, mode in ((ZIP_CEEP, "ceep"), (ZIP_FORD, "ford")):
             if pack.exists():
-                check_zip(
-                    pack,
-                    ["vehicles/common/ultra_realism/carburetor_models.materials.json"],
-                )
+                check_zip(pack, PACK_REQUIRED_ASSETS)
                 if index == 1:
                     check_pack_integration(pack, mode)
+        if index == 1 and (not ZIP_CEEP.exists() or not ZIP_FORD.exists()):
+            raise SystemExit(
+                "[FAIL] patched CEEP/Ford ZIPs required for release validation "
+                "(run scripts/integrar_packs_motores.py)"
+            )
     print(f"\n[OK] Completed {passes} validation passes")
 
 

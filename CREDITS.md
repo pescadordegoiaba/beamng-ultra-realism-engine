@@ -6,7 +6,7 @@
 |-------|------|
 | Mantenedor / autor do modkit | [pescadordegoiaba](https://github.com/pescadordegoiaba) |
 | Desenvolvimento do controller, pipeline de build e integração | Modkit local + assistência de IA (Grok) na iteração do código |
-| Versão atual do controller | `0.14.8` — ver `UltraRealismEngine_Prototype/mod_info/info.json` |
+| Versão atual do controller | `0.14.11` — ver `UltraRealismEngine_Prototype/mod_info/info.json` |
 
 Código Lua/Python/JBeam **original deste repositório**: licenciado sob [MIT](LICENSE), salvo onde indicado abaixo.
 
