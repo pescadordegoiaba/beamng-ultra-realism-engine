@@ -31,3 +31,11 @@ python3 scripts/instalar_mod_beamng.py --all-targets --with-packs
 ```
 
 Sem esses packs patchados, o **Ultra Realism Engine** não aparece nos slots nativos de motor CEEP/Ford — o mod principal sozinho não integra a árvore de peças desses packs.
+
+Os packs patchados também trocam o powertrain de cada motor para **`ultra_combustionEngine`**, que identifica CEEP/Ford e ativa o backend modificado; veículos sem esse hook usam o motor normal.
+
+Se você já tinha ZIPs patchados antigos, reaplique:
+
+```bash
+python3 scripts/repatch_ultra_engine_packs.py
+```

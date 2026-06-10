@@ -19,13 +19,15 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.14.11"
+local MOD_VERSION = "0.14.12"
 
 local cfg = {}
 local st = {}
 local engine = nil
 local lastLogT = 0
 local inferCarbDefinitionFromPartName
+local engineBridge = nil
+pcall(function() engineBridge = rerequire("powertrain/ultraRealismEngineBridge") end)
 
 local function clamp(x, lo, hi)
   x = tonumber(x) or lo
@@ -238,6 +240,21 @@ local function resolveAppliedTorqueFactor(performanceFactor, failureFactor, indu
   st.engineEffectLoadBlend = blend
   local blendedPerformance = finiteNonNegative(lerp(1.0, performanceFactor, blend), 1)
   return finiteNonNegative(blendedPerformance * failureFactor, 1)
+end
+
+local function publishEngineBridge(appliedTorqueFactor, throttle)
+  if not engineBridge or not engineBridge.publishControllerState then return end
+  local ultraActive = engine and engine.ureUltraEngine == true
+  engineBridge.publishControllerState({
+    active = cfg.enableEngineEffect and ultraActive,
+    appliedTorqueFactor = appliedTorqueFactor,
+    engineEffectTarget = st.engineEffectTarget or 1,
+    engineDamageTorqueCoef = st.engineDamageTorqueCoef or 1,
+    suppressFalseStall = cfg.suppressFalseStallUI,
+    severeFailure = math.max(st.vaporLock or 0, st.carbIce or 0, st.misfire or 0),
+    effectiveThrottle = throttle,
+    integrationMode = getIntegrationMode(),
+  })
 end
 
 local function publishNativeRunningState(physicsRPM, appliedTorqueFactor, throttle)
@@ -2280,6 +2297,7 @@ local function update(dt)
   applyTorqueAndFriction(appliedTorqueFactor)
   publishNativeRunningState(physicsRPM, appliedTorqueFactor, throttle)
   applyEngineEffectCoef()
+  publishEngineBridge(appliedTorqueFactor, throttle)
   clearFalseStallState(physicsRPM, appliedTorqueFactor, throttle)
 
   local fuelLps = fuelKgS / math.max(cfg.fuelDensityKgM3, 1) * 1000
@@ -2303,6 +2321,8 @@ local function update(dt)
   setElectricsValue("ure_activePartsSignature", st.activePartsSignature or "")
   setElectricsValue("ure_partsDetectionSource", st.partsDetectionSource or 0)
   setElectricsValue("ure_outputTorqueStateApplied", st.appliedViaOutputTorqueState and 1 or 0)
+  setElectricsValue("ure_ultraEngineActive", (engine and engine.ureUltraEngine) and 1 or 0)
+  setElectricsValue("ure_engineProfile", engine and (engine.ureEngineProfile or getIntegrationMode()) or getIntegrationMode())
   setElectricsValue("ure_carbCount", cfg.carbCount)
   setElectricsValue("ure_carbBarrels", cfg.carbBarrels)
   setElectricsValue("ure_activeCarbBarrels", st.activeCarbBarrels or 0)
@@ -2486,6 +2506,7 @@ local function reset()
   engine = getMainEngine()
   restoreNativeEngineFriction()
   restoreNativeEngineTorqueState()
+  if engineBridge and engineBridge.reset then engineBridge.reset() end
   st = {
     choke = 0,
     knockRisk = 0,

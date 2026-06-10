@@ -43,7 +43,9 @@ OBSOLETE_CARB_ASSET_PATHS = {
 }
 DOWNDRAFT_CARB_FLANGE_DROP_M = 0.135
 SIDEDRAFT_CARB_CENTER_DROP_M = 0.055
-POWERTRAIN_RE = re.compile(r'\["(?:classic_)?combustionEngine"\s*,\s*"mainEngine"')
+POWERTRAIN_RE = re.compile(
+    r'\["(?:(?:classic_)?combustionEngine|ultra_combustionEngine)"\s*,\s*"mainEngine"'
+)
 SLOT_ROW_RE = re.compile(
     r'\[\s*"([^"]+)"\s*,\s*"([^"]*)"\s*,\s*"([^"]+)"'
     r'(?:\s*,\s*(\{[^\r\n]*\}))?\s*\]\s*,?'
@@ -436,6 +438,26 @@ def insert_controller(
         f"{indent}],\n"
     )
     return text[:main_line_start] + table + text[main_line_start:], True
+
+
+def patch_ultra_powertrain(text: str, pack_mode: str) -> tuple[str, int, int]:
+    text, engine_rows = re.subn(
+        r'\["(?:classic_)?combustionEngine"\s*,\s*"mainEngine"',
+        '["ultra_combustionEngine", "mainEngine"',
+        text,
+    )
+    profile_rows = 0
+    if engine_rows and '"ureEngineProfile"' not in text:
+
+        def inject_profile(match: re.Match[str]) -> str:
+            nonlocal profile_rows
+            profile_rows += 1
+            indent = re.match(r"[ \t]*", match.group(0)).group(0)
+            inner = indent + (" " * 4 if indent else "        ")
+            return f'{match.group(1)}\n{inner}"ureEngineProfile": "{pack_mode}",'
+
+        text = re.sub(r'("mainEngine"\s*:\s*\{)', inject_profile, text, count=1)
+    return text, engine_rows, profile_rows
 
 
 def patch_controllers(text: str, config: dict) -> tuple[str, int]:
@@ -1324,6 +1346,7 @@ def patch_zip(source: Path, output: Path, mode: str, config: dict) -> dict:
             continue
         original = data.decode("utf-8", errors="replace")
         text = strip_previous_integration(original)
+        text, _, _ = patch_ultra_powertrain(text, mode)
         text, controller_count = patch_controllers(text, config)
         if mode == "ceep":
             text, hierarchy = patch_ceep_hierarchy(text, inventory)
@@ -1341,6 +1364,7 @@ def patch_zip(source: Path, output: Path, mode: str, config: dict) -> dict:
     marker = {
         "integration": "UltraRealismEngine",
         "integrationMode": "native-slot-hierarchy",
+        "ultraCombustionEngineHook": True,
         "packMode": mode,
         "source": source.name,
         "patchedEngineDefinitions": patched_engines,

@@ -11,6 +11,8 @@ from pathlib import Path
 KIT_DIR = Path(__file__).resolve().parent.parent
 MOD_DIR = KIT_DIR / "UltraRealismEngine_Prototype"
 LUA = MOD_DIR / "lua" / "vehicle" / "controller" / "ultraRealismEngine.lua"
+ULTRA_ENGINE = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultra_combustionEngine.lua"
+ULTRA_BRIDGE = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultraRealismEngineBridge.lua"
 MATERIALS = MOD_DIR / "vehicles" / "common" / "ultra_realism" / "carburetor_models.materials.json"
 INFO = MOD_DIR / "mod_info" / "info.json"
 ZIP_MAIN = KIT_DIR / "UltraRealismEngine_Prototype.zip"
@@ -32,12 +34,14 @@ def run(cmd: list[str], label: str) -> None:
 
 
 def check_lua_syntax() -> None:
-    run(["luac", "-p", str(LUA.relative_to(KIT_DIR))], "Lua syntax")
+    for path in (LUA, ULTRA_ENGINE, ULTRA_BRIDGE):
+        run(["luac", "-p", str(path.relative_to(KIT_DIR))], f"Lua syntax {path.name}")
 
 
 def check_tests() -> None:
     run(["lua", "scripts/test_carburetor_physics.lua"], "carb physics test")
     run(["lua", "scripts/test_ceep_sync.lua"], "CEEP/Ford sync test")
+    run(["lua", "scripts/test_ultra_combustion_engine.lua"], "ultra combustion engine test")
 
 
 def check_materials() -> None:
@@ -67,6 +71,8 @@ def check_lua_markers() -> None:
         "ure_performanceTorqueFactor",
         "resolveIntegrationMode",
         "restoreNativeEngineTorqueState",
+        "publishEngineBridge",
+        "ureUltraEngine",
     ]
     for marker in required:
         if marker not in text:
@@ -79,7 +85,7 @@ def check_lua_markers() -> None:
 def check_version() -> None:
     info = json.loads(INFO.read_text(encoding="utf-8"))
     version = info.get("version", "")
-    if version != "0.14.11":
+    if version != "0.14.12":
         raise SystemExit(f"[FAIL] unexpected version {version}")
     print(f"[OK] version {version}")
 
@@ -100,6 +106,8 @@ def check_zip(path: Path, required: list[str]) -> None:
 
 def check_pack_integration(path: Path, expected_mode: str) -> None:
     controller_hits = 0
+    ultra_engine_hits = 0
+    profile_hits = 0
     with zipfile.ZipFile(path) as zf:
         for name in zf.namelist():
             if not name.lower().endswith(".jbeam"):
@@ -108,13 +116,25 @@ def check_pack_integration(path: Path, expected_mode: str) -> None:
             if '"ultraRealismEngine"' not in text:
                 continue
             controller_hits += 1
-            if f'"integrationMode":"{expected_mode}"' not in text.replace(" ", ""):
+            compact = text.replace(" ", "")
+            if f'"integrationMode":"{expected_mode}"' not in compact:
                 raise SystemExit(
                     f"[FAIL] {path.name} controller in {name} missing integrationMode {expected_mode}"
                 )
+            if '["ultra_combustionEngine","mainEngine"' in compact:
+                ultra_engine_hits += 1
+            if f'"ureEngineProfile":"{expected_mode}"' in compact:
+                profile_hits += 1
     if controller_hits == 0:
         raise SystemExit(f"[FAIL] {path.name} has no ultraRealismEngine controller hooks")
-    print(f"[OK] {path.name} integrationMode={expected_mode} in {controller_hits} engine(s)")
+    if ultra_engine_hits == 0:
+        raise SystemExit(f"[FAIL] {path.name} has no ultra_combustionEngine powertrain hooks")
+    if profile_hits < ultra_engine_hits:
+        raise SystemExit(f"[FAIL] {path.name} missing ureEngineProfile={expected_mode} on some engines")
+    print(
+        f"[OK] {path.name} integrationMode={expected_mode} controllers={controller_hits} "
+        f"ultraEngine={ultra_engine_hits}"
+    )
 
 
 def pack_materials_need_patch(path: Path) -> bool:
@@ -167,6 +187,8 @@ def main() -> None:
                 ZIP_MAIN,
                 [
                     "lua/vehicle/controller/ultraRealismEngine.lua",
+                    "lua/vehicle/powertrain/ultra_combustionEngine.lua",
+                    "lua/vehicle/powertrain/ultraRealismEngineBridge.lua",
                     "vehicles/common/ultra_realism/carburetor_models.materials.json",
                     "mod_info/info.json",
                 ],
