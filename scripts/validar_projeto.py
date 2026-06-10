@@ -45,6 +45,7 @@ def check_lua_syntax() -> None:
 
 def check_tests() -> None:
     run(["lua", "scripts/test_carburetor_physics.lua"], "carb physics test")
+    run(["lua", "scripts/test_breathing_air_system.lua"], "breathing air system test")
     run(["lua", "scripts/test_ceep_sync.lua"], "CEEP/Ford sync test")
     run(["lua", "scripts/test_ultra_combustion_engine.lua"], "ultra combustion engine test")
 
@@ -101,7 +102,7 @@ def check_lua_markers() -> None:
 def check_version() -> None:
     info = json.loads(INFO.read_text(encoding="utf-8"))
     version = info.get("version", "")
-    if version != "0.15.3":
+    if version != "0.16.0":
         raise SystemExit(f"[FAIL] unexpected version {version}")
     print(f"[OK] version {version}")
 

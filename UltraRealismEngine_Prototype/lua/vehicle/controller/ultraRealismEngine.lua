@@ -19,7 +19,7 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.15.3"
+local MOD_VERSION = "0.16.0"
 
 local cfg = {}
 local st = {}
@@ -242,13 +242,19 @@ local function resolveAppliedTorqueFactor(performanceFactor, failureFactor, indu
   local flowDeficit = 1 - clamp(inductionFlowRatio or 1, 0, 1)
   local rpm = getElectricsValue("rpm", getElectricsValue("engineRPM", cfg.idleRPM))
   local rpmLoad = clamp(rpm / math.max(cfg.redlineRPM, cfg.idleRPM + 200), 0, 1.15)
+  local midThrottleBlend = throttle * 0.55 + rpmLoad * throttle * 0.45
   local demandSignal = math.max(
     inductionLoad,
     flowDeficit,
     st.venturiDemandRatio or 0,
-    throttle * 0.42,
-    rpmLoad * throttle * 0.72
+    throttle * 0.52,
+    rpmLoad * throttle * 0.85,
+    midThrottleBlend * 0.68,
+    (1 - clamp(st.breathingScore or 1, 0.4, 1.25) / 1.25) * throttle
   )
+  if throttle < 0.25 and rpm < cfg.idleRPM * 1.6 then
+    demandSignal = demandSignal * clamp(throttle / 0.25, 0, 1)
+  end
   local blend = clamp(demandSignal * cfg.loadProportionalEngineEffectGain, 0, 1)
   st.engineEffectLoadBlend = blend
   local blendedPerformance = finiteNonNegative(lerp(1.0, performanceFactor, blend), 1)
@@ -862,16 +868,33 @@ local function getCarbSecondaryOpening(throttle)
   return opening
 end
 
+local function refreshEffectiveVenturiState(dt, rpm, throttle, tempC)
+  local load = throttle * clamp(rpm / math.max(cfg.redlineRPM, 1), 0, 1)
+  local iceCoef = 1 - clamp(st.carbIce or 0, 0, 1) * 0.22
+  st.carbBodyTempC = lerp(st.carbBodyTempC or tempC, (st.intakeTempC or tempC) + 8 * load, clamp((dt or 0.016) * 0.4, 0, 1))
+  local optimal = cfg.intakeOptimalTempC or 32
+  local tempDev = math.abs((st.carbBodyTempC or tempC) - optimal)
+  local spread = math.max(cfg.intakeTempSpreadC or 18, 4)
+  local tempCoef = clamp(math.exp(-(tempDev * tempDev) / (2 * spread * spread)), 0.82, 1.0)
+  local wearCoef = 1 - clamp(st.venturiWear or 0, 0, 0.15)
+  st.effectiveVenturiCoef = clamp(wearCoef * iceCoef * tempCoef, 0.72, 1.0)
+  local nominalVenturi = math.max(cfg.carbPrimaryVenturiMM or cfg.carbVenturiMM or 30, 1)
+  st.effectiveVenturiMM = nominalVenturi * math.sqrt(st.effectiveVenturiCoef)
+  st.breathingTempEfficiency = tempCoef
+end
+
 local function getActiveCarbGeometry(throttle)
   local count = math.max(cfg.carbCount, 1)
   local primaryBarrels = math.max(cfg.carbPrimaryBarrels or cfg.carbBarrels or 1, 1)
   local secondaryBarrels = math.max(cfg.carbSecondaryBarrels or 0, 0)
   local secondaryOpening = getCarbSecondaryOpening(throttle)
+  local venturiScale = math.sqrt(math.max(st.effectiveVenturiCoef or 1, 0.72))
+  local boreScale = lerp(1, venturiScale, 0.6)
 
-  local primaryBoreD = math.max(cfg.carbPrimaryBoreMM or cfg.carbThrottleBoreMM, 1) / 1000.0
-  local secondaryBoreD = math.max(cfg.carbSecondaryBoreMM or cfg.carbThrottleBoreMM, 1) / 1000.0
-  local primaryVenturiD = math.max(cfg.carbPrimaryVenturiMM or cfg.carbVenturiMM, 1) / 1000.0
-  local secondaryVenturiD = math.max(cfg.carbSecondaryVenturiMM or cfg.carbVenturiMM, 1) / 1000.0
+  local primaryBoreD = math.max(cfg.carbPrimaryBoreMM or cfg.carbThrottleBoreMM, 1) / 1000.0 * boreScale
+  local secondaryBoreD = math.max(cfg.carbSecondaryBoreMM or cfg.carbThrottleBoreMM, 1) / 1000.0 * boreScale
+  local primaryVenturiD = math.max(cfg.carbPrimaryVenturiMM or cfg.carbVenturiMM, 1) / 1000.0 * venturiScale
+  local secondaryVenturiD = math.max(cfg.carbSecondaryVenturiMM or cfg.carbVenturiMM, 1) / 1000.0 * venturiScale
 
   local primaryBoreArea = math.pi * primaryBoreD * primaryBoreD * 0.25 * primaryBarrels * count
   local secondaryBoreArea = math.pi * secondaryBoreD * secondaryBoreD * 0.25 * secondaryBarrels * count * secondaryOpening
@@ -1551,20 +1574,77 @@ local function calcAirDensity(tempC, pressurePa, humidity)
   return (pd / (Rd * T)) + (pv / (Rv * T))
 end
 
-local function calcVE(rpm, throttle, tempC)
+local function calcBaseVE(rpm, throttle)
   local peak = cfg.vePeakRPM
   local spread = cfg.veSpreadRPM
   local ve = cfg.veBase + cfg.vePeakGain * math.exp(-((rpm - peak) * (rpm - peak)) / (2 * spread * spread))
-  ve = ve * lerp(cfg.closedThrottleVECoef, 1.0, throttle)
-
-  return finiteNonNegative(ve, 0)
+  return finiteNonNegative(ve * lerp(cfg.closedThrottleVECoef, 1.0, throttle), 0)
 end
 
-local function calcEngineAirMassFlow(rpm, throttle, rho, tempC)
+local function calcBreathingTempEfficiency(intakeTempC)
+  local optimal = cfg.intakeOptimalTempC or 32
+  local spread = math.max(cfg.intakeTempSpreadC or 18, 4)
+  local dev = (intakeTempC or optimal) - optimal
+  return clamp(math.exp(-(dev * dev) / (2 * spread * spread)), 0.88, 1.0)
+end
+
+local function calcBreathingCapacityScore(sizingRatio, carbCount)
+  sizingRatio = sizingRatio or 1
+  carbCount = math.max(carbCount or 1, 1)
+  if sizingRatio >= 1.0 then
+    return clamp(1 / (sizingRatio ^ 1.1), cfg.minBreathingVECoef or 0.78, 1.0)
+  end
+  if sizingRatio < 0.60 and carbCount >= 2 then
+    local bonus = clamp((0.60 - sizingRatio) / 0.40, 0, 1)
+    return lerp(1.0, cfg.maxBreathingCapacityCoef or 1.14, bonus)
+  end
+  return lerp(0.90, 1.0, clamp((1.0 - sizingRatio) / 0.42, 0, 1))
+end
+
+local function calcBreathingIntakePartsScore()
+  local filterLoss = 1
+  if st.airFilterActive then
+    local wetness = clamp(st.airFilterWetness or 0, 0, 1)
+    local humidity = clamp(st.dynamicHumidity or cfg.humidity or 0, 0, 1)
+    filterLoss = 1 - wetness * 0.28 - humidity * (st.rainIntensity or 0) * 0.12
+  end
+  local valveScore = clamp(st.valveFlowCoef or 1, 0.55, 1.15)
+  local venturiScore = clamp(st.effectiveVenturiCoef or 1, 0.72, 1.0)
+  return clamp(filterLoss * valveScore * venturiScore, 0.45, 1.18)
+end
+
+local function calcBreathingScore(rpm, throttle, rho, tempC)
+  local baseVE = calcBaseVE(rpm, throttle)
+  local dispM3 = cfg.displacementL / 1000.0
+  local revPerSec = math.max(rpm, 0) / 60.0
+  local engineDemandM3s = dispM3 * revPerSec * 0.5 * baseVE
+  local ratedFlowM3s = math.max(cfg.carbRatedCFM or 0, 0) * 0.00047194745
+  local effectiveRatedM3s = ratedFlowM3s * clamp(cfg.carbFlowCalibrationCoef or 0.80, 0.55, 1.15)
+  local sizingRatio = effectiveRatedM3s > 0 and (engineDemandM3s / effectiveRatedM3s) or 1
+  local capacityScore = calcBreathingCapacityScore(sizingRatio, cfg.carbCount)
+  local intakeScore = calcBreathingIntakePartsScore()
+  local tempScore = calcBreathingTempEfficiency(st.intakeTempC or tempC)
+  local score = capacityScore * intakeScore * tempScore
+  st.breathingSizingRatio = sizingRatio
+  st.breathingCapacityScore = capacityScore
+  st.breathingIntakeScore = intakeScore
+  return clamp(score, cfg.minBreathingVECoef or 0.55, cfg.maxBreathingCapacityCoef or 1.18)
+end
+
+local function calcVE(rpm, throttle, tempC, breathingScore)
+  local baseVE = calcBaseVE(rpm, throttle)
+  local rpmLoad = clamp(rpm / math.max(cfg.vePeakRPM, cfg.idleRPM + 200), 0, 1.15)
+  local throttleWeight = clamp(throttle * (0.5 + 0.5 * rpmLoad), 0, 1) * 0.82
+  local breathingVE = lerp(1.0, breathingScore or 1, throttleWeight)
+  local tempVE = calcBreathingTempEfficiency(st.intakeTempC or tempC)
+  return finiteNonNegative(baseVE * breathingVE * tempVE, 0)
+end
+
+local function calcEngineAirMassFlow(rpm, throttle, rho, tempC, breathingScore)
   -- Four-stroke engine: one intake event each two crank rotations.
   local dispM3 = cfg.displacementL / 1000.0
   local revPerSec = math.max(rpm, 0) / 60.0
-  local ve = calcVE(rpm, throttle, tempC)
+  local ve = calcVE(rpm, throttle, tempC, breathingScore)
   local intakeM3s = dispM3 * revPerSec * 0.5 * ve
   return intakeM3s * rho, ve, intakeM3s
 end
@@ -1681,7 +1761,7 @@ local function applyCarbAirRestriction(airM3s, airKgS, rhoAir, throttle, pressur
   end
 
   local ratedFlowM3s = math.max(cfg.carbRatedCFM or 0, 0) * 0.00047194745
-  local effectiveRatedM3s = ratedFlowM3s * clamp(cfg.carbFlowCalibrationCoef or 0.82, 0.55, 1.15)
+  local effectiveRatedM3s = ratedFlowM3s * clamp(cfg.carbFlowCalibrationCoef or 0.80, 0.55, 1.15)
   local cfmLoad = effectiveRatedM3s > 0 and (airM3s / effectiveRatedM3s) or 0
   local cfmRatio = 1
   local rpm = getElectricsValue("rpm", getElectricsValue("engineRPM", cfg.idleRPM))
@@ -2047,6 +2127,39 @@ local function updateThermalAndFailures(dt, rpm, throttle, tempC, pressurePa, hu
     markEngineDamage("rings")
   end
 
+  local thermals = engine and engine.thermals or nil
+  local wallTempC = tonumber(thermals and thermals.cylinderWallTemperature) or st.combustionTempC * 0.12 or tempC
+  local pistonTempC = st.pistonTempC or wallTempC
+  local coldHighRpm = pistonTempC < (cfg.pistonOptimalTempC - 12)
+    and rpm > cfg.redlineRPM * 0.85
+    and throttle > 0.7
+  if coldHighRpm then
+    st.coldHighRpmTimer = (st.coldHighRpmTimer or 0) + dt
+    st.venturiWear = clamp((st.venturiWear or 0) + dt * (0.004 + 0.002 * (st.knockRisk or 0)), 0, 0.15)
+    if st.coldHighRpmTimer > 3.0 and chancePerSecond(0.10 * cfg.failureAggression, dt) then
+      markEngineDamage("rings")
+    end
+  else
+    st.coldHighRpmTimer = math.max((st.coldHighRpmTimer or 0) - dt * 0.5, 0)
+  end
+
+  local overheatRisk = math.max(st.pistonSeizureRisk or 0, clamp((st.combustionTempC - 980) / 220, 0, 1))
+  if overheatRisk > 0.55 then
+    st.overheatTimer = (st.overheatTimer or 0) + dt
+    st.venturiWear = clamp((st.venturiWear or 0) + dt * overheatRisk * 0.0015, 0, 0.15)
+    if st.overheatTimer > 4.5 and overheatRisk > 0.82 and chancePerSecond((overheatRisk - 0.82) * cfg.failureAggression * 0.35, dt) then
+      markEngineDamage("head")
+    end
+    if st.overheatTimer > 7.0 and overheatRisk > 0.92 and chancePerSecond((overheatRisk - 0.92) * cfg.failureAggression * 0.25, dt) then
+      markEngineDamage("bearings")
+    end
+  else
+    st.overheatTimer = math.max((st.overheatTimer or 0) - dt * 0.35, 0)
+  end
+
+  local loadWear = loadHeat * 0.00006 + (st.knockRisk or 0) * 0.00012
+  st.venturiWear = clamp((st.venturiWear or 0) + dt * loadWear - dt * 0.000008, 0, 0.15)
+
   local severeFailure = math.max(st.vaporLock / 0.92, st.carbIce / 0.96, st.misfire / 0.96)
   if severeFailure > 1 and startProtection < 0.12 then
     st.severeFailureTimer = (st.severeFailureTimer or 0) + dt
@@ -2285,8 +2398,11 @@ local function update(dt)
   cfg.airTempC, cfg.pressurePa, cfg.humidity = tempC, pressurePa, humidity
   updateClimateShock(dt, tempC, pressurePa, humidity)
 
+  refreshEffectiveVenturiState(dt, rpm, throttle, tempC)
   local rho = calcAirDensity(tempC, pressurePa, humidity)
-  local airKgS, ve, airM3s = calcEngineAirMassFlow(rpm, throttle, rho, tempC)
+  local breathingScore = cfg.fuelingMode == "carb" and calcBreathingScore(rpm, throttle, rho, tempC) or 1
+  st.breathingScore = breathingScore
+  local airKgS, ve, airM3s = calcEngineAirMassFlow(rpm, throttle, rho, tempC, breathingScore)
   local requestedAirKgS = airKgS
 
   local carbRestrictionVelocity, carbRestriction, throttlePlateDP = 0, 0, 0
@@ -2335,10 +2451,19 @@ local function update(dt)
     inductionTorqueEff = inductionTorqueEff * lerp(1, inductionFlowRatio, (inductionLoad - 0.55) / 0.45)
   end
   local climateShockLoss = 1 - st.climateShock * 0.16
+  local densityTorqueBlend = lerp(1, densityEff, cfg.densityTorqueWeight or 0.35)
+  local breathingTorqueBonus = 1
+  if cfg.fuelingMode == "carb" then
+    if (breathingScore or 1) > 1.02 then
+      breathingTorqueBonus = lerp(1, clamp(breathingScore, 1, cfg.maxBreathingTorqueBonus or 1.12), inductionLoad)
+    elseif (breathingScore or 1) < 0.90 then
+      breathingTorqueBonus = lerp(clamp(breathingScore / 0.90, 0.78, 1), 1, 1 - inductionLoad * 0.25)
+    end
+  end
 
-  -- Native combustionEngine already multiplies torque by intakeAirDensityCoef; keep density telemetry only.
+  -- Native combustionEngine already multiplies torque by intakeAirDensityCoef; partial density blend avoids double-counting.
   local performanceFactor = mixEff * timingEff * pistonEff * compressionEff * valveTrainEff
-    * inductionTorqueEff * climateShockLoss
+    * inductionTorqueEff * climateShockLoss * densityTorqueBlend * breathingTorqueBonus
   local failureFactor = iceLoss * vaporLoss * misfireLoss
   local rawTorqueFactor = performanceFactor * failureFactor
   local torqueFactor = finiteNonNegative(rawTorqueFactor, 1)
@@ -2541,6 +2666,15 @@ local function update(dt)
   setElectricsValue("ure_fuelDeliveryCapacityLPH", st.fuelDeliveryCapacityLPH or 0)
   setElectricsValue("ure_fuelUsedL", st.fuelUsedL)
   setElectricsValue("ure_ve", ve)
+  setElectricsValue("ure_breathingScore", st.breathingScore or 1)
+  setElectricsValue("ure_breathingSizingRatio", st.breathingSizingRatio or 0)
+  setElectricsValue("ure_breathingCapacityScore", st.breathingCapacityScore or 1)
+  setElectricsValue("ure_breathingIntakeScore", st.breathingIntakeScore or 1)
+  setElectricsValue("ure_breathingTempEfficiency", st.breathingTempEfficiency or 1)
+  setElectricsValue("ure_effectiveVenturiMM", st.effectiveVenturiMM or cfg.carbVenturiMM or 0)
+  setElectricsValue("ure_effectiveVenturiCoef", st.effectiveVenturiCoef or 1)
+  setElectricsValue("ure_venturiWear", st.venturiWear or 0)
+  setElectricsValue("ure_carbBodyTempC", st.carbBodyTempC or tempC)
   setElectricsValue("ure_densityFactor", densityEff)
   setElectricsValue("ure_mixtureEfficiency", mixEff)
   setElectricsValue("ure_timingEfficiency", timingEff)
@@ -2587,7 +2721,7 @@ local function update(dt)
       lastLogT = t
       if cfg.diagnosticLog then
         log("I", "UltraRealismEngine", string.format(
-          "diag parts=%d carb=%s count=%.0f barrels=%.0f native=%d detected=%d src=%d torque=%.3f physics=%.3f blend=%.2f applied=%.3f flow=%.3f demand=%.2f cfm=%.2f afr=%.2f lambda=%.2f misfire=%.2f stall=%d",
+          "diag parts=%d carb=%s count=%.0f barrels=%.0f native=%d detected=%d src=%d torque=%.3f physics=%.3f blend=%.2f applied=%.3f flow=%.3f demand=%.2f cfm=%.2f breath=%.3f ve=%.3f venturi=%.2f wear=%.3f afr=%.2f lambda=%.2f misfire=%.2f stall=%d",
           st.activePartsCount or 0,
           st.activeCarbPartName ~= "" and st.activeCarbPartName or "-",
           cfg.carbCount or 0,
@@ -2602,6 +2736,10 @@ local function update(dt)
           inductionFlowRatio,
           st.venturiDemandRatio or 0,
           st.carbCFMLoad or 0,
+          st.breathingScore or 1,
+          ve,
+          st.effectiveVenturiCoef or 1,
+          st.venturiWear or 0,
           afr,
           lambda,
           st.misfire or 0,
@@ -2636,6 +2774,10 @@ local function reset()
     climateShock = 0,
     fuelUsedL = 0,
     airFilterWetness = 0,
+    venturiWear = 0,
+    effectiveVenturiCoef = 1,
+    carbBodyTempC = cfg.airTempC or 25,
+    breathingScore = 1,
     activeCarbBarrels = 0,
     activeCarbBoreAreaM2 = 0,
     activeVenturiAreaM2 = 0,
@@ -2799,10 +2941,16 @@ local function init(jbeamData)
   cfg.idleStallGuardMinTorque = safeNumber(jbeamData.idleStallGuardMinTorque, 0.88)
   cfg.idleCircuitFuelMult = safeNumber(jbeamData.idleCircuitFuelMult, 0.12)
   cfg.loadProportionalEngineEffect = bool(jbeamData.loadProportionalEngineEffect, true)
-  cfg.loadProportionalEngineEffectGain = safeNumber(jbeamData.loadProportionalEngineEffectGain, 1.35)
-  cfg.carbPartialRestrictionStart = safeNumber(jbeamData.carbPartialRestrictionStart, 0.55)
-  cfg.carbFlowCalibrationCoef = safeNumber(jbeamData.carbFlowCalibrationCoef, 0.82)
-  cfg.multiCarbFlowBonus = safeNumber(jbeamData.multiCarbFlowBonus, 1.06)
+  cfg.loadProportionalEngineEffectGain = safeNumber(jbeamData.loadProportionalEngineEffectGain, 1.42)
+  cfg.carbPartialRestrictionStart = safeNumber(jbeamData.carbPartialRestrictionStart, 0.48)
+  cfg.carbFlowCalibrationCoef = safeNumber(jbeamData.carbFlowCalibrationCoef, 0.80)
+  cfg.multiCarbFlowBonus = safeNumber(jbeamData.multiCarbFlowBonus, 1.08)
+  cfg.minBreathingVECoef = safeNumber(jbeamData.minBreathingVECoef, 0.78)
+  cfg.maxBreathingCapacityCoef = safeNumber(jbeamData.maxBreathingCapacityCoef, 1.14)
+  cfg.maxBreathingTorqueBonus = safeNumber(jbeamData.maxBreathingTorqueBonus, 1.08)
+  cfg.densityTorqueWeight = safeNumber(jbeamData.densityTorqueWeight, 0.35)
+  cfg.intakeOptimalTempC = safeNumber(jbeamData.intakeOptimalTempC, 32)
+  cfg.intakeTempSpreadC = safeNumber(jbeamData.intakeTempSpreadC, 18)
   cfg.suppressFalseStallUI = bool(jbeamData.suppressFalseStallUI, true)
   cfg.startFailureSuppression = safeNumber(jbeamData.startFailureSuppression, 0.75)
   cfg.stallDelaySeconds = safeNumber(jbeamData.stallDelaySeconds, 2.5)
