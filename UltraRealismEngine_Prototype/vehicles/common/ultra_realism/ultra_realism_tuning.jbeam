@@ -1581,6 +1581,110 @@
             "$*maxTorqueRating": 1.08
         }
     },
+    "ultra_realism_tb_stock": {
+        "information": {
+            "authors": "OpenAI ChatGPT / local modkit",
+            "name": "Existing / Stock Throttle Body",
+            "value": 0
+        },
+        "slotType": "ultra_realism_throttle_body"
+    },
+    "ultra_realism_tb_58_single": {
+        "information": {
+            "authors": "OpenAI ChatGPT / local modkit",
+            "name": "58 mm Single Throttle Body",
+            "value": 420
+        },
+        "slotType": "ultra_realism_throttle_body",
+        "mainEngine": {
+            "ultraRealismThrottleBody": {
+                "diameterMM": 58,
+                "count": 1,
+                "dischargeCoef": 0.88
+            }
+        }
+    },
+    "ultra_realism_tb_70_single": {
+        "information": {
+            "authors": "OpenAI ChatGPT / local modkit",
+            "name": "70 mm Single Throttle Body",
+            "value": 680
+        },
+        "slotType": "ultra_realism_throttle_body",
+        "mainEngine": {
+            "ultraRealismThrottleBody": {
+                "diameterMM": 70,
+                "count": 1,
+                "dischargeCoef": 0.9
+            }
+        }
+    },
+    "ultra_realism_tb_80_twin": {
+        "information": {
+            "authors": "OpenAI ChatGPT / local modkit",
+            "name": "80 mm Twin Throttle Bodies",
+            "value": 1200
+        },
+        "slotType": "ultra_realism_throttle_body",
+        "mainEngine": {
+            "ultraRealismThrottleBody": {
+                "diameterMM": 80,
+                "count": 2,
+                "dischargeCoef": 0.91
+            }
+        }
+    },
+    "ultra_realism_tb_race_90": {
+        "information": {
+            "authors": "OpenAI ChatGPT / local modkit",
+            "name": "90 mm Race Throttle Body",
+            "value": 1800
+        },
+        "slotType": "ultra_realism_throttle_body",
+        "mainEngine": {
+            "ultraRealismThrottleBody": {
+                "diameterMM": 90,
+                "count": 1,
+                "dischargeCoef": 0.93
+            }
+        }
+    },
+    "ultra_realism_diesel_injection_stock": {
+        "information": {
+            "authors": "OpenAI ChatGPT / local modkit",
+            "name": "Existing / Stock Diesel Injection",
+            "value": 0
+        },
+        "slotType": "ultra_realism_diesel_injection"
+    },
+    "ultra_realism_diesel_injection_street": {
+        "information": {
+            "authors": "OpenAI ChatGPT / local modkit",
+            "name": "Street Diesel Injection Pump",
+            "value": 900
+        },
+        "slotType": "ultra_realism_diesel_injection",
+        "mainEngine": {
+            "ultraRealismDieselInjection": {
+                "nozzleFlowMM3PerStroke": 42,
+                "targetPowerAFR": 18.5
+            }
+        }
+    },
+    "ultra_realism_diesel_injection_performance": {
+        "information": {
+            "authors": "OpenAI ChatGPT / local modkit",
+            "name": "Performance Diesel Injection Pump",
+            "value": 2200
+        },
+        "slotType": "ultra_realism_diesel_injection",
+        "mainEngine": {
+            "ultraRealismDieselInjection": {
+                "nozzleFlowMM3PerStroke": 58,
+                "targetPowerAFR": 17.8
+            }
+        }
+    },
     "ultra_realism_short_block_stock": {
         "information": {
             "authors": "OpenAI ChatGPT / local modkit",

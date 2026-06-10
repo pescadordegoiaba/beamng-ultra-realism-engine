@@ -772,6 +772,40 @@ def additional_tuning_parts() -> dict[str, dict]:
             "$+maxPhysicalRPM": 150,
             "$*maxTorqueRating": 1.08,
         }),
+
+        "ultra_realism_tb_stock": part("ultra_realism_throttle_body", "Existing / Stock Throttle Body"),
+        "ultra_realism_tb_58_single": part("ultra_realism_throttle_body", "58 mm Single Throttle Body", 420, {
+            "ultraRealismThrottleBody": {"diameterMM": 58, "count": 1, "dischargeCoef": 0.88},
+        }),
+        "ultra_realism_tb_70_single": part("ultra_realism_throttle_body", "70 mm Single Throttle Body", 680, {
+            "ultraRealismThrottleBody": {"diameterMM": 70, "count": 1, "dischargeCoef": 0.90},
+        }),
+        "ultra_realism_tb_80_twin": part("ultra_realism_throttle_body", "80 mm Twin Throttle Bodies", 1200, {
+            "ultraRealismThrottleBody": {"diameterMM": 80, "count": 2, "dischargeCoef": 0.91},
+        }),
+        "ultra_realism_tb_race_90": part("ultra_realism_throttle_body", "90 mm Race Throttle Body", 1800, {
+            "ultraRealismThrottleBody": {"diameterMM": 90, "count": 1, "dischargeCoef": 0.93},
+        }),
+
+        "ultra_realism_diesel_injection_stock": part(
+            "ultra_realism_diesel_injection", "Existing / Stock Diesel Injection"
+        ),
+        "ultra_realism_diesel_injection_street": part(
+            "ultra_realism_diesel_injection", "Street Diesel Injection Pump", 900, {
+                "ultraRealismDieselInjection": {
+                    "nozzleFlowMM3PerStroke": 42,
+                    "targetPowerAFR": 18.5,
+                },
+            }
+        ),
+        "ultra_realism_diesel_injection_performance": part(
+            "ultra_realism_diesel_injection", "Performance Diesel Injection Pump", 2200, {
+                "ultraRealismDieselInjection": {
+                    "nozzleFlowMM3PerStroke": 58,
+                    "targetPowerAFR": 17.8,
+                },
+            }
+        ),
     }
     fuel_lph = {
         "ultra_realism_fuel_delivery_mechanical": 130,

@@ -48,6 +48,7 @@ def check_tests() -> None:
     run(["lua", "scripts/test_breathing_air_system.lua"], "breathing air system test")
     run(["lua", "scripts/test_ceep_sync.lua"], "CEEP/Ford sync test")
     run(["lua", "scripts/test_ultra_combustion_engine.lua"], "ultra combustion engine test")
+    run(["lua", "scripts/test_fueling_mode.lua"], "fueling mode detection test")
 
 
 def check_materials() -> None:
@@ -78,9 +79,12 @@ def check_lua_markers() -> None:
         "resolveIntegrationMode",
         "restoreNativeEngineTorqueState",
         "publishEngineBridge",
+        "publishCachedEngineBridge",
+        "cacheBridgePayload",
         "ureUltraEngine",
         "integratedFuel",
-        "publishEngineBridge",
+        "ultraRealismThrottleBody",
+        "ultraRealismDieselInjection",
     ]
     for marker in required:
         if marker not in text:
@@ -96,13 +100,16 @@ def check_lua_markers() -> None:
         raise SystemExit("[FAIL] classic fork missing torque integration")
     if "ureIntegration.computeSpentEnergy" not in classic_text:
         raise SystemExit("[FAIL] classic fork missing fuel integration")
+    for marker in ("torqueModUltraIntakeMult", "torqueModUltraIgnition"):
+        if marker not in classic_text or marker not in ULTRA_STOCK.read_text(encoding="utf-8"):
+            raise SystemExit(f"[FAIL] fork missing {marker} wiring")
     print("[OK] Lua active-part and venturi markers")
 
 
 def check_version() -> None:
     info = json.loads(INFO.read_text(encoding="utf-8"))
     version = info.get("version", "")
-    if version != "0.16.1":
+    if version != "0.17.2":
         raise SystemExit(f"[FAIL] unexpected version {version}")
     print(f"[OK] version {version}")
 
@@ -154,6 +161,26 @@ def check_pack_integration(path: Path, expected_mode: str) -> None:
     )
 
 
+def check_pack_no_carb_on_forced_induction(path: Path) -> None:
+    offenders = []
+    with zipfile.ZipFile(path) as zf:
+        for name in zf.namelist():
+            if not name.lower().endswith(".jbeam"):
+                continue
+            text = zf.read(name).decode("utf-8", errors="replace").lower()
+            if "turbo" not in text and "supercharger" not in text and "twincharger" not in text:
+                continue
+            if '"slottype": "ultra_realism_carburetor"' in text.replace(" ", ""):
+                if any(token in text for token in ("turbo manifold", "supercharger manifold", "twincharger")):
+                    offenders.append(name)
+    if offenders:
+        raise SystemExit(
+            f"[FAIL] {path.name} still maps carbs onto forced-induction intakes: "
+            + ", ".join(offenders[:5])
+        )
+    print(f"[OK] {path.name} forced-induction intakes avoid carb clones")
+
+
 def check_pack_intake_coverage(path: Path, mode: str) -> None:
     marker_name = "ultra_realism_integration.json"
     with zipfile.ZipFile(path) as zf:
@@ -164,13 +191,13 @@ def check_pack_intake_coverage(path: Path, mode: str) -> None:
     carbs = int(counts.get("ultra_realism_carburetor", 0))
     intake = int(counts.get("ultra_realism_intake_geometry", 0))
     if mode == "ceep":
-        if carbs < 90:
+        if carbs < 65:
             raise SystemExit(
-                f"[FAIL] {path.name} expected >=90 carb slot targets, got {carbs}"
+                f"[FAIL] {path.name} expected >=65 carb slot targets, got {carbs}"
             )
-        if intake < 55:
+        if intake < 70:
             raise SystemExit(
-                f"[FAIL] {path.name} expected >=55 intake geometry targets, got {intake}"
+                f"[FAIL] {path.name} expected >=70 intake geometry targets, got {intake}"
             )
     else:
         if intake < 60:
@@ -251,6 +278,8 @@ def main() -> None:
                 if index == 1:
                     check_pack_integration(pack, mode)
                     check_pack_intake_coverage(pack, mode)
+                    if mode == "ceep":
+                        check_pack_no_carb_on_forced_induction(pack)
         if index == 1 and (not ZIP_CEEP.exists() or not ZIP_FORD.exists()):
             raise SystemExit(
                 "[FAIL] patched CEEP/Ford ZIPs required for release validation "

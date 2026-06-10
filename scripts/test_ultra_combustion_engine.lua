@@ -114,4 +114,28 @@ assertTrue(ceepDevice.ureEngineProfile == "ceep", "CEEP profile preserved")
 local fordDevice = ultraEngine.new({ureEngineProfile = "ford"})
 assertTrue(fordDevice.ureUltraEngine, "Ford uses URE stock fork")
 
-print("Ultra combustion engine integration tests passed (v0.16.0)")
+bridge.publishControllerState({
+  active = true,
+  appliedTorqueFactor = 0.44,
+  engineEffectTarget = 0.44,
+  integratedFuel = true,
+  fuelIntegrationBlend = 1,
+  fuelKgS = 0.0015,
+  lambda = 1.02,
+  mixtureEfficiency = 0.96,
+  fuelDensityKgM3 = 740,
+})
+bridge.publishControllerState({
+  active = true,
+  appliedTorqueFactor = 0.44,
+  engineEffectTarget = 0.44,
+  integratedFuel = true,
+  fuelIntegrationBlend = 1,
+  fuelKgS = 0.0015,
+  lambda = 1.02,
+  mixtureEfficiency = 0.96,
+  fuelDensityKgM3 = 740,
+})
+assertNear(integration.resolveTorqueCoef(device), 0.44, 0.0001, "bridge refresh updates torque coef")
+
+print("Ultra combustion engine integration tests passed (v0.17.2)")

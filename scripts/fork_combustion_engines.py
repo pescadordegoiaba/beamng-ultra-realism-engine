@@ -49,6 +49,95 @@ INIT_INJECT = (
     "  return device"
 )
 
+INSTANT_LOAD_OLD = (
+    "  local instantLoad = min(max(torque / ((maxCurrentTorque + 1e-30) * device.outputTorqueState * device.forcedInductionCoef), 0), 1)"
+)
+INSTANT_LOAD_NEW = (
+    "  local instantLoad = min(max(torque / ((maxCurrentTorque + 1e-30) * device.forcedInductionCoef), 0), 1)"
+)
+
+ULTRA_TORQUE_HELPER = """
+  local function loadUltraMultCurve(key)
+    if not jbeamData[key] then return {} end
+    local tableData = tableFromHeaderTable(jbeamData[key])
+    local points = {}
+    for _, v in pairs(tableData) do
+      maxAvailableRPM = max(maxAvailableRPM, v.rpm)
+      table.insert(points, {v.rpm, v.torque})
+    end
+    return createCurve(points)
+  end
+
+  local rawUltraIntakeMultCurve = loadUltraMultCurve("torqueModUltraIntakeMult")
+  local rawUltraSpacerMultCurve = loadUltraMultCurve("torqueModUltraSpacerMult")
+  local rawUltraStrokerMultCurve = loadUltraMultCurve("torqueModUltraStrokerMult")
+  local rawUltraPistonsMultCurve = loadUltraMultCurve("torqueModUltraPistonsMult")
+  local rawUltraRingsMultCurve = loadUltraMultCurve("torqueModUltraRingsMult")
+  local rawUltraCamshaftMultCurve = loadUltraMultCurve("torqueModUltraCamshaftMult")
+  local rawUltraValvetrainMultCurve = loadUltraMultCurve("torqueModUltraValvetrainMult")
+  local rawUltraHeadsMultCurve = loadUltraMultCurve("torqueModUltraHeadsMult")
+  local rawUltraIgnitionCurve = {}
+  local lastUltraIgnitionValue = 0
+  if jbeamData.torqueModUltraIgnition then
+    local ignitionTable = tableFromHeaderTable(jbeamData.torqueModUltraIgnition)
+    local ignitionPoints = {}
+    for _, v in pairs(ignitionTable) do
+      maxAvailableRPM = max(maxAvailableRPM, v.rpm)
+      table.insert(ignitionPoints, {v.rpm, v.torque})
+    end
+    rawUltraIgnitionCurve = createCurve(ignitionPoints)
+    lastUltraIgnitionValue = rawUltraIgnitionCurve[#rawUltraIgnitionCurve] or 0
+  end
+"""
+
+STOCK_COMBINED_OLD = """  local rawCombinedCurve = {}
+  for i = 0, maxAvailableRPM, 1 do
+    local base = rawBaseCurve[i] or 0
+    local baseMult = rawTorqueMultCurve[i] or 1
+    local intake = rawIntakeCurve[i] or lastRawIntakeValue
+    local exhaust = rawExhaustCurve[i] or lastRawExhaustValue
+    rawCombinedCurve[i] = base * baseMult + intake + exhaust
+  end"""
+
+STOCK_COMBINED_NEW = (
+    ULTRA_TORQUE_HELPER
+    + """  local rawCombinedCurve = {}
+  for i = 0, maxAvailableRPM, 1 do
+    local base = rawBaseCurve[i] or 0
+    local baseMult = rawTorqueMultCurve[i] or 1
+    local intake = rawIntakeCurve[i] or lastRawIntakeValue
+    local exhaust = rawExhaustCurve[i] or lastRawExhaustValue
+    local ultraMult = (rawUltraIntakeMultCurve[i] or 1)
+      * (rawUltraSpacerMultCurve[i] or 1)
+      * (rawUltraStrokerMultCurve[i] or 1)
+      * (rawUltraPistonsMultCurve[i] or 1)
+      * (rawUltraRingsMultCurve[i] or 1)
+      * (rawUltraCamshaftMultCurve[i] or 1)
+      * (rawUltraValvetrainMultCurve[i] or 1)
+      * (rawUltraHeadsMultCurve[i] or 1)
+    local ultraIgnition = rawUltraIgnitionCurve[i] or lastUltraIgnitionValue
+    rawCombinedCurve[i] = base * baseMult * ultraMult + intake + exhaust + ultraIgnition
+  end"""
+)
+
+CLASSIC_COMBINED_OLD = (
+    "    rawCombinedCurve[i] = base * baseMult * StrokerMult * CylHeadMult * InjectorMult * CamshaftMult * IcMult * FuelMult + intake + exhaust + Filter + Header + Distributor + VelocityStack + Spacer + IntkManifold + DrySump"
+)
+CLASSIC_COMBINED_NEW = (
+    "    local ultraMult = (rawUltraIntakeMultCurve[i] or 1)\n"
+    "      * (rawUltraSpacerMultCurve[i] or 1)\n"
+    "      * (rawUltraStrokerMultCurve[i] or 1)\n"
+    "      * (rawUltraPistonsMultCurve[i] or 1)\n"
+    "      * (rawUltraRingsMultCurve[i] or 1)\n"
+    "      * (rawUltraCamshaftMultCurve[i] or 1)\n"
+    "      * (rawUltraValvetrainMultCurve[i] or 1)\n"
+    "      * (rawUltraHeadsMultCurve[i] or 1)\n"
+    "    local ultraIgnition = rawUltraIgnitionCurve[i] or lastUltraIgnitionValue\n"
+    "    rawCombinedCurve[i] = base * baseMult * StrokerMult * CylHeadMult * InjectorMult * CamshaftMult * IcMult * FuelMult * ultraMult + intake + exhaust + Filter + Header + Distributor + VelocityStack + Spacer + IntkManifold + DrySump + ultraIgnition"
+)
+
+CLASSIC_COMBINED_ANCHOR = "  local rawCombinedCurve = {}\n  for i = 0, maxAvailableRPM, 1 do"
+
 
 def read_classic_source() -> str:
     if not CEEP_ZIP.exists():
@@ -87,7 +176,25 @@ def patch_engine_source(text: str, default_profile: str) -> str:
     text = text.replace(FUEL_OLD, FUEL_NEW, 1)
     text = text.replace(STALL_ANCHOR, STALL_INJECT, 1)
     text = text.replace(INIT_ANCHOR, INIT_INJECT, 1)
+    if INSTANT_LOAD_OLD not in text:
+        raise SystemExit("[ERRO] Âncora de instantEngineLoad não encontrada — engine base mudou?")
+    text = text.replace(INSTANT_LOAD_OLD, INSTANT_LOAD_NEW, 1)
     return text
+
+
+def patch_stock_ultra_torque(text: str) -> str:
+    if STOCK_COMBINED_OLD not in text:
+        raise SystemExit("[ERRO] Âncora de curva de torque stock não encontrada — engine base mudou?")
+    return text.replace(STOCK_COMBINED_OLD, STOCK_COMBINED_NEW, 1)
+
+
+def patch_classic_ultra_torque(text: str) -> str:
+    if CLASSIC_COMBINED_ANCHOR not in text:
+        raise SystemExit("[ERRO] Âncora de curva de torque classic não encontrada — engine base mudou?")
+    if CLASSIC_COMBINED_OLD not in text:
+        raise SystemExit("[ERRO] Fórmula de torque classic não encontrada — engine base mudou?")
+    text = text.replace(CLASSIC_COMBINED_ANCHOR, ULTRA_TORQUE_HELPER + CLASSIC_COMBINED_ANCHOR, 1)
+    return text.replace(CLASSIC_COMBINED_OLD, CLASSIC_COMBINED_NEW, 1)
 
 
 def write_fork(path: Path, text: str) -> None:
@@ -97,11 +204,11 @@ def write_fork(path: Path, text: str) -> None:
 
 
 def main() -> None:
-    classic = patch_engine_source(read_classic_source(), "ceep")
-    stock = patch_engine_source(read_stock_source(), "stock")
+    classic = patch_classic_ultra_torque(patch_engine_source(read_classic_source(), "ceep"))
+    stock = patch_stock_ultra_torque(patch_engine_source(read_stock_source(), "stock"))
     write_fork(OUT_DIR / "ultra_classic_combustionEngine.lua", classic)
     write_fork(OUT_DIR / "ultra_stock_combustionEngine.lua", stock)
-    print("[OK] Forks URE gerados com torque + combustível + stall integrados")
+    print("[OK] Forks URE gerados com torque + combustível + stall + torqueModUltra integrados")
 
 
 if __name__ == "__main__":

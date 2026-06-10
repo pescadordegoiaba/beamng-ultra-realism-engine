@@ -19,7 +19,7 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.16.1"
+local MOD_VERSION = "0.17.2"
 
 local cfg = {}
 local st = {}
@@ -287,6 +287,32 @@ local function publishEngineBridge(appliedTorqueFactor, throttle, fuelKgS, airKg
   setElectricsValue("ure_fuelDensityKgM3", cfg.fuelDensityKgM3)
 end
 
+local function cacheBridgePayload(appliedTorqueFactor, throttle, fuelKgS, airKgS, lambda, afr, mixEff)
+  st.bridgePayload = {
+    appliedTorqueFactor = appliedTorqueFactor,
+    throttle = throttle,
+    fuelKgS = fuelKgS,
+    airKgS = airKgS,
+    lambda = lambda,
+    afr = afr,
+    mixEff = mixEff,
+  }
+end
+
+local function publishCachedEngineBridge()
+  local payload = st.bridgePayload
+  if not payload then return end
+  publishEngineBridge(
+    payload.appliedTorqueFactor,
+    payload.throttle,
+    payload.fuelKgS,
+    payload.airKgS,
+    payload.lambda,
+    payload.afr,
+    payload.mixEff
+  )
+end
+
 local function publishNativeRunningState(physicsRPM, appliedTorqueFactor, throttle)
   if not cfg.suppressFalseStallUI or not engine then return end
   local starterEngaged = clamp(tonumber(engine.starterEngagedCoef) or 0, 0, 1)
@@ -552,6 +578,11 @@ local function getBestNativePartEntry(category)
         if text:find("barrel", 1, true) or text:find("bbl", 1, true) then score = score + 12 end
         if tostring(partData.slotType or ""):lower():find("carb", 1, true) then score = score + 10 end
         if text:find("manifold", 1, true) then score = score - 12 end
+        if text:find("turbo", 1, true) or text:find("supercharger", 1, true)
+          or text:find("twincharger", 1, true) or text:find("procharger", 1, true)
+          or text:find("throttle body", 1, true) or text:find("ecoboost", 1, true) then
+          score = score - 24
+        end
       elseif category == "camshaft" then
         if text:find("camshaft", 1, true) then score = score + 18 end
         if tostring(partData.slotType or ""):lower():find("cam", 1, true) then score = score + 10 end
@@ -828,7 +859,7 @@ local function detectCarbSetupFromParts()
     elseif text:find("quadcarb", 1, true) or text:find("quad-carb", 1, true) or text:find("quad carb", 1, true) then
       count, barrels, progressive, detected = 4, 1, false, true
     elseif text:find("dualcarb", 1, true) or text:find("dual carb", 1, true) or text:find("twincarb", 1, true) or text:find("twin-carb", 1, true) or text:find("twin carb", 1, true) then
-      count, progressive, detected = 2, true, true
+      count, barrels, progressive, detected = 2, 2, true, true
     elseif text:find("4bbl", 1, true) or text:find("4-barrel", 1, true) or text:find("4 barrel", 1, true) then
       count, barrels, progressive, detected = 1, 4, true, true
     elseif text:find("2bbl", 1, true) or text:find("2-barrel", 1, true) or text:find("2 barrel", 1, true) then
@@ -1266,6 +1297,20 @@ local function analyzeEngineParts()
 
   local throttleBodyDiameterMM = clamp(34 + cfg.displacementL * 5.5, 38, 105)
   if forced then throttleBodyDiameterMM = throttleBodyDiameterMM * 1.08 end
+  local throttleBodyPart = getActivePartTable("ultraRealismThrottleBody")
+  if type(throttleBodyPart) == "table" then
+    throttleBodyDiameterMM = clamp(safeNumber(throttleBodyPart.diameterMM, throttleBodyDiameterMM), 28, 120)
+    cfg.throttleBodyCount = math.floor(clamp(safeNumber(throttleBodyPart.count, cfg.throttleBodyCount), 1, 8) + 0.5)
+    cfg.throttleBodyDischargeCoef = clamp(safeNumber(throttleBodyPart.dischargeCoef, cfg.throttleBodyDischargeCoef), 0.45, 1.05)
+  end
+  local dieselInjection = getActivePartTable("ultraRealismDieselInjection")
+  if cfg.fuelingMode == "diesel" and type(dieselInjection) == "table" then
+    local nozzleFlow = safeNumber(dieselInjection.nozzleFlowMM3PerStroke, 0)
+    if nozzleFlow > 0 then
+      cfg.injectorCCMin = math.max(cfg.injectorCCMin, nozzleFlow * 0.06)
+    end
+    cfg.powerAFR = clamp(safeNumber(dieselInjection.targetPowerAFR, cfg.powerAFR), 14, 24)
+  end
   local intakeMaterialDensityKgM3, intakeMaterial = inferMaterialDensityKgM3(text, 2700)
   local tunnel = getActivePartTable("ultraRealismTunnelVenturi")
   local tunnelActive = type(tunnel) == "table"
@@ -1456,10 +1501,10 @@ local function autoTuneFromEngine()
     local injectionDetected = containsAny(partsText, {"efi", "sefi", "mfi", "injection", "injector", "ecoboost", "coyote", "voodoo"})
     if energyType:find("diesel", 1, true) then
       cfg.fuelingMode = "diesel"
-    elseif carbDetected then
-      cfg.fuelingMode = "carb"
     elseif injectionDetected then
       cfg.fuelingMode = "injection"
+    elseif carbDetected then
+      cfg.fuelingMode = "carb"
     elseif cfg.preferCarburetor then
       cfg.fuelingMode = "carb"
     else
@@ -2277,8 +2322,8 @@ local function applyEngineEffectCoef()
 end
 
 local function updatePhysics()
-  -- Re-apply every physics substep so the next powertrain.update() sees the latest factor.
-  -- Native order is powertrain.update -> controller.update, so this always leads by one substep.
+  -- Re-publish bridge + torque coef every physics substep so forked engines read fresh state.
+  publishCachedEngineBridge()
   applyEngineEffectCoef()
   if not engine then engine = getMainEngine() end
   if engine then
@@ -2290,6 +2335,7 @@ local function updatePhysics()
 end
 
 local function updateWheelsIntermediate(_dt)
+  publishCachedEngineBridge()
   applyEngineEffectCoef()
 end
 
@@ -2483,7 +2529,8 @@ local function update(dt)
   applyTorqueAndFriction(appliedTorqueFactor)
   publishNativeRunningState(physicsRPM, appliedTorqueFactor, throttle)
   applyEngineEffectCoef()
-  publishEngineBridge(appliedTorqueFactor, throttle, fuelKgS, airKgS, lambda, afr, mixEff)
+  cacheBridgePayload(appliedTorqueFactor, throttle, fuelKgS, airKgS, lambda, afr, mixEff)
+  publishCachedEngineBridge()
   clearFalseStallState(physicsRPM, appliedTorqueFactor, throttle)
 
   local fuelLps = fuelKgS / math.max(cfg.fuelDensityKgM3, 1) * 1000

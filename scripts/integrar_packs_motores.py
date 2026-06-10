@@ -20,10 +20,13 @@ from pathlib import Path
 from gerar_jbeam_variantes import (
     AUTO_CONFIG_CEEP,
     AUTO_CONFIG_FORD,
+    CEEP_SYNC_DEFAULTS,
+    FORD_SYNC_DEFAULTS,
     ULTRA_ENGINE_SLOTS,
     additional_tuning_parts,
     carburetor_parts,
     carburetor_visual_spec,
+    native_sync_parts,
     ultra_engine_parts,
 )
 
@@ -80,11 +83,6 @@ CEEP_CARB_LABELS = {
     "carburetor",
     "carburetors",
     "cross-ram carburetors",
-    "turbo manifold",
-    "turbo intake manifold",
-    "twincharger manifold",
-    "supercharger manifold",
-    "supercharger intake",
 }
 CEEP_INTAKE_GEOMETRY_LABELS = {
     "intake manifold",
@@ -96,6 +94,24 @@ CEEP_INTAKE_GEOMETRY_LABELS = {
     "supercharger intake",
     "procharger manifold",
 }
+CEEP_FORCED_INDUCTION_LABELS = {
+    "turbo manifold",
+    "turbo intake manifold",
+    "twincharger manifold",
+    "supercharger manifold",
+    "supercharger intake",
+    "procharger manifold",
+}
+THROTTLE_BODY_SLOT = [
+    "ultra_realism_throttle_body",
+    "ultra_realism_tb_stock",
+    "Throttle Body / ITB",
+]
+DIESEL_INJECTION_SLOT = [
+    "ultra_realism_diesel_injection",
+    "ultra_realism_diesel_injection_stock",
+    "Diesel Injection Pump / Nozzles",
+]
 CEEP_NATIVE_CATEGORY_LABELS = {
     "ultra_realism_carburetor": CEEP_CARB_LABELS,
     "ultra_realism_intake_geometry": CEEP_INTAKE_GEOMETRY_LABELS,
@@ -138,13 +154,17 @@ FORD_CARB_INTAKE_KEYWORDS = (
     "twin carb",
     "six pack",
     "sixpack",
+)
+FORD_THROTTLE_BODY_INTAKE_KEYWORDS = (
     "turbo",
     "supercharger",
     "twincharger",
     "blower",
     "procharger",
-    "itb",
+    "ecoboost",
+    "efi",
     "throttle body",
+    "itb",
     "individual throttle",
 )
 FORD_CARB_INTAKE_EXCLUDES = (
@@ -687,7 +707,23 @@ def source_parts() -> dict[str, dict]:
     parts.update(carburetor_parts())
     parts.update(additional_tuning_parts())
     parts.update(ultra_engine_parts())
+    parts.update(native_sync_parts(CEEP_SYNC_DEFAULTS, "ceep"))
+    parts.update(native_sync_parts(FORD_SYNC_DEFAULTS, "ford"))
     return parts
+
+
+def cloneable_ure_parts(slot_type: str, parts: dict[str, dict]) -> list[tuple[str, dict]]:
+    result: list[tuple[str, dict]] = []
+    for key, value in parts.items():
+        if value.get("slotType") != slot_type:
+            continue
+        if isinstance(value.get("ultraRealismNativeSync"), dict):
+            continue
+        if slot_type == "ultra_realism_carburetor":
+            if not isinstance(value.get("ultraRealismCarburetor"), dict):
+                continue
+        result.append((key, value))
+    return result
 
 
 def native_target_types(inventory: dict, labels: set[str]) -> list[str]:
@@ -1065,7 +1101,31 @@ def ford_intake_supports_ure_carb(name: str) -> bool:
     lowered = name.lower()
     if any(token in lowered for token in FORD_CARB_INTAKE_EXCLUDES):
         return False
+    if any(keyword in lowered for keyword in FORD_THROTTLE_BODY_INTAKE_KEYWORDS):
+        return False
     return any(keyword in lowered for keyword in FORD_CARB_INTAKE_KEYWORDS)
+
+
+def ford_intake_supports_throttle_body(name: str) -> bool:
+    lowered = name.lower()
+    if any(token in lowered for token in FORD_CARB_INTAKE_EXCLUDES):
+        return False
+    return any(keyword in lowered for keyword in FORD_THROTTLE_BODY_INTAKE_KEYWORDS)
+
+
+def target_is_forced_induction(inventory: dict, target: str) -> bool:
+    for record in inventory["definitions"].get(target, []):
+        label = record.get("name", "").strip().lower()
+        if any(token in label for token in CEEP_FORCED_INDUCTION_LABELS):
+            return True
+    return False
+
+
+def append_unique_slot(rows: list[list], slot_row: list) -> list[list]:
+    existing = {row[0] for row in rows}
+    if slot_row[0] not in existing:
+        rows.append(slot_row)
+    return rows
 
 
 def ford_carb_owner_specs(inventory: dict) -> list[dict]:
@@ -1100,6 +1160,23 @@ def ford_carb_owner_specs(inventory: dict) -> list[dict]:
     return specs
 
 
+def ford_throttle_body_owner_specs(inventory: dict) -> list[dict]:
+    intake_types = set(native_target_types(inventory, FORD_INTAKE_GEOMETRY_LABELS))
+    specs = []
+    seen = set()
+    for intake_type in sorted(intake_types):
+        for record in inventory["definitions"].get(intake_type, []):
+            name = record["name"]
+            if not ford_intake_supports_throttle_body(name):
+                continue
+            identity = (record["filename"], record["partKey"])
+            if identity in seen:
+                continue
+            seen.add(identity)
+            specs.append(record)
+    return specs
+
+
 def generate_native_parts(mode: str, inventory: dict) -> tuple[dict[str, dict], dict[str, int]]:
     all_parts = source_parts()
     category_labels = (
@@ -1114,11 +1191,7 @@ def generate_native_parts(mode: str, inventory: dict) -> tuple[dict[str, dict], 
             if mode == "ceep" and source_slot == "ultra_realism_valvetrain"
             else native_target_types(inventory, labels)
         )
-        candidates = [
-            (key, value)
-            for key, value in all_parts.items()
-            if value.get("slotType") == source_slot
-        ]
+        candidates = cloneable_ure_parts(source_slot, all_parts)
         for target in targets:
             preserved_slots = representative_layout(inventory["layouts"].get(target, []))
             mount = (
@@ -1141,6 +1214,11 @@ def generate_native_parts(mode: str, inventory: dict) -> tuple[dict[str, dict], 
                     row for row in MISSING_CARB_SLOTS
                     if row[0] not in {item[0] for item in preserved_slots}
                 )
+            elif source_slot == "ultra_realism_intake_geometry":
+                if target_is_forced_induction(inventory, target):
+                    preserved_slots = append_unique_slot(
+                        preserved_slots, THROTTLE_BODY_SLOT
+                    )
 
             target_hash = hashlib.sha1(target.encode("utf-8")).hexdigest()[:10]
             for source_key, source_value in candidates:
@@ -1190,11 +1268,7 @@ def generate_native_parts(mode: str, inventory: dict) -> tuple[dict[str, dict], 
         category_counts[source_slot] = len(targets)
 
     if mode == "ford":
-        candidates = [
-            (key, value)
-            for key, value in all_parts.items()
-            if value.get("slotType") == "ultra_realism_carburetor"
-        ]
+        candidates = cloneable_ure_parts("ultra_realism_carburetor", all_parts)
         owners = ford_carb_owner_specs(inventory)
         for owner in owners:
             owner_hash = owner["childSlot"].rsplit("_", 1)[-1]
@@ -1365,6 +1439,25 @@ def patch_ford_hierarchy(
     stats["carbIntakeOwners"] = carb_parts
     stats["carbIntakeRows"] = carb_rows
     stats["nativeCarbMeshesRemoved"] = removed_meshes
+    tb_parts = 0
+    tb_rows = 0
+    tb_owner_specs = {
+        (spec["filename"], spec["partKey"]): spec
+        for spec in ford_throttle_body_owner_specs(inventory)
+    }
+    for start, end in reversed(part_blocks(text)):
+        key = part_key(text, start)
+        spec = tb_owner_specs.get((filename, key))
+        if spec is None:
+            continue
+        block = text[start:end]
+        block, added = add_slots_to_block(block, [THROTTLE_BODY_SLOT])
+        if added:
+            text = text[:start] + block + text[end:]
+            tb_parts += 1
+            tb_rows += added
+    stats["throttleBodyIntakeOwners"] = tb_parts
+    stats["throttleBodyIntakeRows"] = tb_rows
     return text, stats
 
 

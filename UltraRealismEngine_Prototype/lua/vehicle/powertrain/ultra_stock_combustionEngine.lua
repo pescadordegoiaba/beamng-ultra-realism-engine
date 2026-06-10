@@ -762,7 +762,7 @@ local function updateTorque(device, dt)
   torque = min(torque, device.maxTorqueLimit) --limit output torque to a specified max, math.huge by default
 
   local lastInstantEngineLoad = device.instantEngineLoad
-  local instantLoad = min(max(torque / ((maxCurrentTorque + 1e-30) * device.outputTorqueState * device.forcedInductionCoef), 0), 1)
+  local instantLoad = min(max(torque / ((maxCurrentTorque + 1e-30) * device.forcedInductionCoef), 0), 1)
   device.instantEngineLoad = instantLoad
   device.engineLoad = device.loadSmoother:getCapped(device.instantEngineLoad, dt)
   local normalizedEngineAV = clamp(engineAV / device.maxAV, 0, 1)
@@ -1938,13 +1938,54 @@ local function new(jbeamData)
     lastRawExhaustValue = rawExhaustCurve[#rawExhaustCurve]
   end
 
+
+  local function loadUltraMultCurve(key)
+    if not jbeamData[key] then return {} end
+    local tableData = tableFromHeaderTable(jbeamData[key])
+    local points = {}
+    for _, v in pairs(tableData) do
+      maxAvailableRPM = max(maxAvailableRPM, v.rpm)
+      table.insert(points, {v.rpm, v.torque})
+    end
+    return createCurve(points)
+  end
+
+  local rawUltraIntakeMultCurve = loadUltraMultCurve("torqueModUltraIntakeMult")
+  local rawUltraSpacerMultCurve = loadUltraMultCurve("torqueModUltraSpacerMult")
+  local rawUltraStrokerMultCurve = loadUltraMultCurve("torqueModUltraStrokerMult")
+  local rawUltraPistonsMultCurve = loadUltraMultCurve("torqueModUltraPistonsMult")
+  local rawUltraRingsMultCurve = loadUltraMultCurve("torqueModUltraRingsMult")
+  local rawUltraCamshaftMultCurve = loadUltraMultCurve("torqueModUltraCamshaftMult")
+  local rawUltraValvetrainMultCurve = loadUltraMultCurve("torqueModUltraValvetrainMult")
+  local rawUltraHeadsMultCurve = loadUltraMultCurve("torqueModUltraHeadsMult")
+  local rawUltraIgnitionCurve = {}
+  local lastUltraIgnitionValue = 0
+  if jbeamData.torqueModUltraIgnition then
+    local ignitionTable = tableFromHeaderTable(jbeamData.torqueModUltraIgnition)
+    local ignitionPoints = {}
+    for _, v in pairs(ignitionTable) do
+      maxAvailableRPM = max(maxAvailableRPM, v.rpm)
+      table.insert(ignitionPoints, {v.rpm, v.torque})
+    end
+    rawUltraIgnitionCurve = createCurve(ignitionPoints)
+    lastUltraIgnitionValue = rawUltraIgnitionCurve[#rawUltraIgnitionCurve] or 0
+  end
   local rawCombinedCurve = {}
   for i = 0, maxAvailableRPM, 1 do
     local base = rawBaseCurve[i] or 0
     local baseMult = rawTorqueMultCurve[i] or 1
     local intake = rawIntakeCurve[i] or lastRawIntakeValue
     local exhaust = rawExhaustCurve[i] or lastRawExhaustValue
-    rawCombinedCurve[i] = base * baseMult + intake + exhaust
+    local ultraMult = (rawUltraIntakeMultCurve[i] or 1)
+      * (rawUltraSpacerMultCurve[i] or 1)
+      * (rawUltraStrokerMultCurve[i] or 1)
+      * (rawUltraPistonsMultCurve[i] or 1)
+      * (rawUltraRingsMultCurve[i] or 1)
+      * (rawUltraCamshaftMultCurve[i] or 1)
+      * (rawUltraValvetrainMultCurve[i] or 1)
+      * (rawUltraHeadsMultCurve[i] or 1)
+    local ultraIgnition = rawUltraIgnitionCurve[i] or lastUltraIgnitionValue
+    rawCombinedCurve[i] = base * baseMult * ultraMult + intake + exhaust + ultraIgnition
   end
 
   device.compressionBrakeCurve = {}
