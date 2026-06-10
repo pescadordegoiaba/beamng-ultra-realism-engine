@@ -97,4 +97,4 @@ assertTrue(ceepDevice.ureEngineProfile == "ceep", "CEEP profile preserved")
 local fordDevice = ultraEngine.new({ureEngineProfile = "ford"})
 assertTrue(fordDevice.ureUltraEngine, "Ford uses URE stock fork")
 
-print("Ultra combustion engine integration tests passed (v0.15.0)")
+print("Ultra combustion engine integration tests passed (v0.15.1)")

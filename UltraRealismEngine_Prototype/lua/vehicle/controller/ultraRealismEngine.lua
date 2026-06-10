@@ -19,13 +19,17 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.15.0"
+local MOD_VERSION = "0.15.1"
 
 local cfg = {}
 local st = {}
 local engine = nil
 local lastLogT = 0
 local inferCarbDefinitionFromPartName
+local resolveIntegrationMode
+local getIntegrationMode
+local usesNativePartSync
+local getActivePartsText
 local engineBridge = nil
 pcall(function() engineBridge = rerequire("powertrain/ultraRealismEngineBridge") end)
 
@@ -280,7 +284,7 @@ local function publishNativeRunningState(physicsRPM, appliedTorqueFactor, thrott
   end
 end
 
-local function resolveIntegrationMode()
+function resolveIntegrationMode()
   local configured = string.lower(tostring(cfg.integrationMode or "generic"))
   if configured == "ceep" or configured == "ford" then return configured end
   if configured == "auto" or configured == "generic" then
@@ -291,11 +295,11 @@ local function resolveIntegrationMode()
   return configured
 end
 
-local function getIntegrationMode()
+function getIntegrationMode()
   return st.resolvedIntegrationMode or cfg.integrationMode or "generic"
 end
 
-local function usesNativePartSync()
+function usesNativePartSync()
   local mode = getIntegrationMode()
   return mode == "ceep" or mode == "ford"
 end
@@ -388,7 +392,7 @@ local function computeActivePartsSignature()
   return table.concat(chunks, "|")
 end
 
-local function getActivePartsText()
+function getActivePartsText()
   local chunks = {}
 
   for slotName, partName in pairs(getInstalledParts()) do
