@@ -56,6 +56,23 @@ assertGreater(spent, 500, "integrated fuel energy replaces native burn table")
 integration.postStallGuard(device)
 assertTrue(not device.isStalled, "integration clears false stall")
 
+local bridgeLoads = 0
+rerequire = function(path)
+  if path:find("ultraRealismEngineBridge", 1, true) then
+    bridgeLoads = bridgeLoads + 1
+    return bridge
+  end
+  if path:find("ultra_combustionEngineIntegration", 1, true) then return integration end
+  error("missing rerequire mock for " .. tostring(path))
+end
+package.loaded[integrationPath] = nil
+local integrationCached = assert(dofile(integrationPath))
+for _ = 1, 50 do
+  integrationCached.resolveTorqueCoef(device)
+  integrationCached.computeSpentEnergy(device, 1000, 50, 0.8, 0.05)
+end
+assertTrue(bridgeLoads == 1, "bridge module cached across hot integration calls")
+
 local classicBackend = {
   new = function(jbeamData)
     return {
@@ -97,4 +114,4 @@ assertTrue(ceepDevice.ureEngineProfile == "ceep", "CEEP profile preserved")
 local fordDevice = ultraEngine.new({ureEngineProfile = "ford"})
 assertTrue(fordDevice.ureUltraEngine, "Ford uses URE stock fork")
 
-print("Ultra combustion engine integration tests passed (v0.15.1)")
+print("Ultra combustion engine integration tests passed (v0.15.2)")

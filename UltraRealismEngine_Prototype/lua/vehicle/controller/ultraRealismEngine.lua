@@ -19,7 +19,7 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.15.1"
+local MOD_VERSION = "0.15.2"
 
 local cfg = {}
 local st = {}
@@ -490,10 +490,19 @@ local function getActiveCarbDefinition()
   return bestDef, bestName
 end
 
-local function syncActivePartsState()
+local function syncActivePartsState(dt)
+  dt = dt or 0.016
+  st.partsSyncTimer = (st.partsSyncTimer or 0) + dt
+  local interval = cfg.partsSyncInterval or 0.5
+  if st.partsSyncTimer < interval and st.activePartsSignature ~= "" then
+    return false
+  end
+  st.partsSyncTimer = 0
+
   local signature = computeActivePartsSignature()
   if signature == st.activePartsSignature then return false end
   st.activePartsSignature = signature
+  st.activePartsCount = #collectActivePartEntries()
   st.resolvedIntegrationMode = resolveIntegrationMode()
   st.carbSetupScanned = false
   st.enginePartsAnalyzed = false
@@ -2214,7 +2223,7 @@ end
 local function update(dt)
   if not engine then engine = getMainEngine() end
   if engine and cfg.autoDetectEngine and not st.autoDetected then autoTuneFromEngine() end
-  local partsChanged = syncActivePartsState()
+  local partsChanged = syncActivePartsState(dt)
   if cfg.fuelingMode == "carb" and (partsChanged or not st.carbSetupScanned) then
     detectCarbSetupFromParts()
     if st.autoDetected then recalibrateCarbFuelFromEngine() end
@@ -2318,12 +2327,16 @@ local function update(dt)
   local fuelLps = fuelKgS / math.max(cfg.fuelDensityKgM3, 1) * 1000
   st.fuelUsedL = (st.fuelUsedL or 0) + fuelLps * dt
 
+  st.telemetryTimer = (st.telemetryTimer or 0) + dt
+  local publishSlowTelemetry = partsChanged
+    or not st.initialTelemetryPublished
+    or st.telemetryTimer >= (cfg.telemetryInterval or 0.1)
+  if publishSlowTelemetry then
+    st.telemetryTimer = 0
+    st.initialTelemetryPublished = true
+  end
+
   setElectricsValue("ure_enabled", 1)
-  setElectricsValue("ure_autoDetected", st.autoDetected and 1 or 0)
-  setElectricsValue("ure_displacementL", cfg.displacementL)
-  setElectricsValue("ure_cylinders", cfg.injectorCount)
-  setElectricsValue("ure_fuelingModeId", cfg.fuelingMode == "carb" and 1 or (cfg.fuelingMode == "diesel" and 3 or 2))
-  setElectricsValue("ure_engineMaxTorqueNm", st.autoMaxTorqueNm or getEngineMaxTorque() or 0)
   setElectricsValue("ure_driverThrottle", driverThrottle)
   setElectricsValue("ure_effectiveThrottle", throttle)
   setElectricsValue("ure_carbThrottleVisual", clamp(throttle, 0, 1))
@@ -2331,8 +2344,76 @@ local function update(dt)
   setElectricsValue("ure_carbLinkageVisual", clamp(driverThrottle, 0, 1))
   setElectricsValue("ure_startProtection", startProtection)
   setElectricsValue("ure_rawTorqueFactor", rawTorqueFactor)
+  setElectricsValue("ure_torqueFactor", torqueFactor)
+  setElectricsValue("ure_appliedTorqueFactor", appliedTorqueFactor or torqueFactor)
+  setElectricsValue("ure_performanceTorqueFactor", performanceFactor)
+  setElectricsValue("ure_failureTorqueFactor", failureFactor)
+  setElectricsValue("ure_engineEffectTarget", st.engineEffectTarget or 1)
+  setElectricsValue("ure_engineEffectApplied", st.lastAppliedEngineEffectFactor or 1)
+  setElectricsValue("ure_afr", afr)
+  setElectricsValue("ure_lambda", lambda)
+  setElectricsValue("ure_fuel_gps", fuelKgS * 1000)
+  setElectricsValue("ure_air_gps", airKgS * 1000)
+  setElectricsValue("ure_misfire", st.misfire)
+  setElectricsValue("ure_carbIce", st.carbIce)
+  setElectricsValue("ure_vaporLock", st.vaporLock)
+  setElectricsValue("ure_knockRisk", st.knockRisk)
+  setElectricsValue("ure_carbCFMLoad", st.carbCFMLoad or 0)
+  setElectricsValue("ure_venturiDemandRatio", st.venturiDemandRatio or 0)
+  setElectricsValue("ure_choke", st.choke)
+  setElectricsValue("ure_manifoldPressureKPa", manifoldPressurePa / 1000)
+  setElectricsValue("ure_airTempC", tempC)
+
+  if not publishSlowTelemetry then
+    if cfg.debugLog or cfg.diagnosticLog then
+      local t = st.runTime or 0
+      if obj and obj.getSimTime then
+        local ok, simT = pcall(function() return obj:getSimTime() end)
+        if ok and type(simT) == "number" then t = simT end
+      end
+      local interval = cfg.diagnosticLog and 5.0 or 2.0
+      if t - lastLogT > interval then
+        lastLogT = t
+        if cfg.diagnosticLog then
+          log("I", "UltraRealismEngine", string.format(
+            "diag parts=%d carb=%s count=%.0f barrels=%.0f native=%d detected=%d src=%d torque=%.3f physics=%.3f blend=%.2f applied=%.3f flow=%.3f demand=%.2f cfm=%.2f afr=%.2f lambda=%.2f misfire=%.2f stall=%d",
+            st.activePartsCount or 0,
+            st.activeCarbPartName ~= "" and st.activeCarbPartName or "-",
+            cfg.carbCount or 0,
+            cfg.carbBarrels or 0,
+            st.nativeCarbSynced and 1 or 0,
+            st.carbSetupDetected and 1 or 0,
+            st.partsDetectionSource or 0,
+            torqueFactor,
+            st.appliedTorqueFactor or torqueFactor,
+            st.engineEffectLoadBlend or 1,
+            st.lastAppliedEngineEffectFactor or -1,
+            inductionFlowRatio,
+            st.venturiDemandRatio or 0,
+            st.carbCFMLoad or 0,
+            afr,
+            lambda,
+            st.misfire or 0,
+            engine and engine.isStalled and 1 or 0
+          ))
+        elseif cfg.debugLog then
+          log("I", "UltraRealismEngine", string.format(
+            "AFR %.2f lambda %.2f torque %.2f knock %.2f ice %.2f vapor %.2f dampFade %.2f",
+            afr, lambda, torqueFactor, st.knockRisk, st.carbIce, st.vaporLock, st.damperFade
+          ))
+        end
+      end
+    end
+    return
+  end
+
+  setElectricsValue("ure_autoDetected", st.autoDetected and 1 or 0)
+  setElectricsValue("ure_displacementL", cfg.displacementL)
+  setElectricsValue("ure_cylinders", cfg.injectorCount)
+  setElectricsValue("ure_fuelingModeId", cfg.fuelingMode == "carb" and 1 or (cfg.fuelingMode == "diesel" and 3 or 2))
+  setElectricsValue("ure_engineMaxTorqueNm", st.autoMaxTorqueNm or getEngineMaxTorque() or 0)
   setElectricsValue("ure_activeCarbPartName", st.activeCarbPartName or "")
-  setElectricsValue("ure_activePartsCount", #collectActivePartEntries())
+  setElectricsValue("ure_activePartsCount", st.activePartsCount or 0)
   setElectricsValue("ure_activePartsSignature", st.activePartsSignature or "")
   setElectricsValue("ure_partsDetectionSource", st.partsDetectionSource or 0)
   setElectricsValue("ure_outputTorqueStateApplied", st.appliedViaOutputTorqueState and 1 or 0)
@@ -2412,22 +2493,16 @@ local function update(dt)
   setElectricsValue("ure_oilGControlCoef", st.oilGControlCoef or 1)
   setElectricsValue("ure_oilPressureReserveCoef", st.oilPressureReserveCoef or 1)
   setElectricsValue("ure_headGasketStrengthCoef", st.headGasketStrengthCoef or 1)
-  setElectricsValue("ure_airTempC", tempC)
   setElectricsValue("ure_pressurePa", pressurePa)
   setElectricsValue("ure_manifoldPressurePa", manifoldPressurePa)
-  setElectricsValue("ure_manifoldPressureKPa", manifoldPressurePa / 1000)
   setElectricsValue("ure_manifoldVacuumKPa", (pressurePa - manifoldPressurePa) / 1000)
   setElectricsValue("ure_humidity", humidity)
   setElectricsValue("ure_rainIntensity", st.rainIntensity or 0)
   setElectricsValue("ure_ramAirPressurePa", st.ramAirPressurePa or 0)
   setElectricsValue("ure_airDensity", rho)
-  setElectricsValue("ure_air_gps", airKgS * 1000)
-  setElectricsValue("ure_fuel_gps", fuelKgS * 1000)
   setElectricsValue("ure_fuel_lph", fuelLps * 3600)
   setElectricsValue("ure_fuelDeliveryCapacityLPH", st.fuelDeliveryCapacityLPH or 0)
   setElectricsValue("ure_fuelUsedL", st.fuelUsedL)
-  setElectricsValue("ure_afr", afr)
-  setElectricsValue("ure_lambda", lambda)
   setElectricsValue("ure_ve", ve)
   setElectricsValue("ure_densityFactor", densityEff)
   setElectricsValue("ure_mixtureEfficiency", mixEff)
@@ -2436,18 +2511,8 @@ local function update(dt)
   setElectricsValue("ure_timingDeg", userTiming)
   setElectricsValue("ure_mbtDeg", mbt)
   setElectricsValue("ure_timingError", timingError)
-  setElectricsValue("ure_performanceTorqueFactor", performanceFactor)
-  setElectricsValue("ure_failureTorqueFactor", failureFactor)
   setElectricsValue("ure_engineDamageTorqueCoef", st.engineDamageTorqueCoef or 1)
-  setElectricsValue("ure_torqueFactor", torqueFactor)
-  setElectricsValue("ure_appliedTorqueFactor", appliedTorqueFactor or torqueFactor)
   setElectricsValue("ure_engineEffectLoadBlend", st.engineEffectLoadBlend or 1)
-  setElectricsValue("ure_engineEffectTarget", st.engineEffectTarget or 1)
-  setElectricsValue("ure_engineEffectApplied", st.lastAppliedEngineEffectFactor or 1)
-  setElectricsValue("ure_knockRisk", st.knockRisk)
-  setElectricsValue("ure_misfire", st.misfire)
-  setElectricsValue("ure_carbIce", st.carbIce)
-  setElectricsValue("ure_vaporLock", st.vaporLock)
   setElectricsValue("ure_climateShock", st.climateShock)
   setElectricsValue("ure_combustionTempC", st.combustionTempC)
   setElectricsValue("ure_intakeTempC", st.intakeTempC or tempC)
@@ -2464,7 +2529,6 @@ local function update(dt)
   setElectricsValue("ure_runnerAirMS", st.runnerAirMS or 0)
   setElectricsValue("ure_jetSignal", jetSignal or 0)
   setElectricsValue("ure_injectorDuty", injectorDuty or 0)
-  setElectricsValue("ure_choke", st.choke)
   setElectricsValue("ure_damperTempC", st.damperTempC)
   setElectricsValue("ure_damperFade", st.damperFade)
   setElectricsValue("ure_springFatigue", st.springFatigue)
@@ -2487,7 +2551,7 @@ local function update(dt)
       if cfg.diagnosticLog then
         log("I", "UltraRealismEngine", string.format(
           "diag parts=%d carb=%s count=%.0f barrels=%.0f native=%d detected=%d src=%d torque=%.3f physics=%.3f blend=%.2f applied=%.3f flow=%.3f demand=%.2f cfm=%.2f afr=%.2f lambda=%.2f misfire=%.2f stall=%d",
-          #collectActivePartEntries(),
+          st.activePartsCount or 0,
           st.activeCarbPartName ~= "" and st.activeCarbPartName or "-",
           cfg.carbCount or 0,
           cfg.carbBarrels or 0,
@@ -2545,6 +2609,10 @@ local function reset()
     carbSetupDetected = false,
     carbSetupScanned = false,
     activePartsSignature = "",
+    activePartsCount = 0,
+    partsSyncTimer = 0,
+    telemetryTimer = 0,
+    initialTelemetryPublished = false,
     activeCarbPartName = "",
     appliedViaOutputTorqueState = false,
     enginePartsAnalyzed = false,
@@ -2577,8 +2645,10 @@ local function init(jbeamData)
 
   cfg.enableEngineEffect = bool(jbeamData.enableEngineEffect, true)
   cfg.enableFrictionFallback = bool(jbeamData.enableFrictionFallback, false)
-  cfg.debugLog = bool(jbeamData.debugLog, true)
-  cfg.diagnosticLog = bool(jbeamData.diagnosticLog, true)
+  cfg.debugLog = bool(jbeamData.debugLog, false)
+  cfg.diagnosticLog = bool(jbeamData.diagnosticLog, false)
+  cfg.telemetryInterval = safeNumber(jbeamData.telemetryInterval, 0.1)
+  cfg.partsSyncInterval = safeNumber(jbeamData.partsSyncInterval, 0.5)
   cfg.allowStall = bool(jbeamData.allowStall, false)
   cfg.allowLockup = bool(jbeamData.allowLockup, false)
   cfg.failureAggression = safeNumber(jbeamData.failureAggression, 0.45)
@@ -2700,7 +2770,7 @@ local function init(jbeamData)
   cfg.dynamicFrictionPenalty = safeNumber(jbeamData.dynamicFrictionPenalty, 0.010)
 
   cfg.suspensionAffectsGrip = bool(jbeamData.suspensionAffectsGrip, true)
-  cfg.enableSuspensionBeamEffects = bool(jbeamData.enableSuspensionBeamEffects, true)
+  cfg.enableSuspensionBeamEffects = bool(jbeamData.enableSuspensionBeamEffects, false)
   cfg.damperFadeStartC = safeNumber(jbeamData.damperFadeStartC, 95)
   cfg.damperFadeEndC = safeNumber(jbeamData.damperFadeEndC, 175)
   cfg.damperMinCoef = safeNumber(jbeamData.damperMinCoef, 0.58)

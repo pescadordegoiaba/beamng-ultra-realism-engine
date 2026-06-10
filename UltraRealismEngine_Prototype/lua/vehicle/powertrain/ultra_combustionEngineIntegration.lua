@@ -6,9 +6,12 @@ Reads controller state via ultraRealismEngineBridge and applies torque + fuel + 
 local M = {}
 
 local DEFAULT_FUEL_ENERGY_J_PER_KG = 43.5e6
+local cachedBridge
 
 local function getBridge()
-  return rerequire("powertrain/ultraRealismEngineBridge")
+  if cachedBridge then return cachedBridge end
+  cachedBridge = rerequire("powertrain/ultraRealismEngineBridge")
+  return cachedBridge
 end
 
 local function clamp(x, lo, hi)

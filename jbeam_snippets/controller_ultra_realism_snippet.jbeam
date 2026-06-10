@@ -14,8 +14,10 @@
     "preferCarburetor": false,
     "autoTuneVECurve": true,
     "autoDetectCarbSetup": true,
-    "debugLog": true,
-    "diagnosticLog": true,
+    "debugLog": false,
+    "diagnosticLog": false,
+    "telemetryInterval": 0.1,
+    "partsSyncInterval": 0.5,
     "climatePreset": "game_environment",
     "useBeamNGEnvironment": true
 }]
