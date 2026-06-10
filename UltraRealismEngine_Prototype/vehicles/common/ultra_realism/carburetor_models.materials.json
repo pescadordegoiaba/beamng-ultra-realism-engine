@@ -1,0 +1,110 @@
+{
+  "UltraRealismCarbCast": {
+    "name": "UltraRealismCarbCast",
+    "mapTo": "UltraRealismCarbCast",
+    "class": "Material",
+    "Stages": [
+      {
+        "baseColorFactor": [0.28, 0.30, 0.31, 1.0],
+        "metallicFactor": 0.72,
+        "roughnessFactor": 0.44
+      },
+      {},
+      {},
+      {}
+    ],
+    "materialTag0": "beamng",
+    "materialTag1": "vehicle",
+    "version": 1.5
+  },
+  "UltraRealismCarbZinc": {
+    "name": "UltraRealismCarbZinc",
+    "mapTo": "UltraRealismCarbZinc",
+    "class": "Material",
+    "Stages": [
+      {
+        "baseColorFactor": [0.43, 0.40, 0.28, 1.0],
+        "metallicFactor": 0.68,
+        "roughnessFactor": 0.48
+      },
+      {},
+      {},
+      {}
+    ],
+    "materialTag0": "beamng",
+    "materialTag1": "vehicle",
+    "version": 1.5
+  },
+  "UltraRealismCarbMachined": {
+    "name": "UltraRealismCarbMachined",
+    "mapTo": "UltraRealismCarbMachined",
+    "class": "Material",
+    "Stages": [
+      {
+        "baseColorFactor": [0.56, 0.58, 0.59, 1.0],
+        "metallicFactor": 0.82,
+        "roughnessFactor": 0.28
+      },
+      {},
+      {},
+      {}
+    ],
+    "materialTag0": "beamng",
+    "materialTag1": "vehicle",
+    "version": 1.5
+  },
+  "UltraRealismCarbBlack": {
+    "name": "UltraRealismCarbBlack",
+    "mapTo": "UltraRealismCarbBlack",
+    "class": "Material",
+    "Stages": [
+      {
+        "baseColorFactor": [0.035, 0.04, 0.045, 1.0],
+        "metallicFactor": 0.18,
+        "roughnessFactor": 0.56
+      },
+      {},
+      {},
+      {}
+    ],
+    "materialTag0": "beamng",
+    "materialTag1": "vehicle",
+    "version": 1.5
+  },
+  "UltraRealismCarbBrass": {
+    "name": "UltraRealismCarbBrass",
+    "mapTo": "UltraRealismCarbBrass",
+    "class": "Material",
+    "Stages": [
+      {
+        "baseColorFactor": [0.55, 0.31, 0.07, 1.0],
+        "metallicFactor": 0.78,
+        "roughnessFactor": 0.35
+      },
+      {},
+      {},
+      {}
+    ],
+    "materialTag0": "beamng",
+    "materialTag1": "vehicle",
+    "version": 1.5
+  },
+  "UltraRealismCarbRed": {
+    "name": "UltraRealismCarbRed",
+    "mapTo": "UltraRealismCarbRed",
+    "class": "Material",
+    "Stages": [
+      {
+        "baseColorFactor": [0.35, 0.025, 0.018, 1.0],
+        "metallicFactor": 0.25,
+        "roughnessFactor": 0.42
+      },
+      {},
+      {},
+      {}
+    ],
+    "materialTag0": "beamng",
+    "materialTag1": "vehicle",
+    "version": 1.5
+  }
+}

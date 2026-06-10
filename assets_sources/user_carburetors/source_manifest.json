@@ -1,0 +1,218 @@
+[
+  {
+    "name": "Carburetor_realistic_scaled",
+    "source": "Carburetor_realistic.obj",
+    "scale": 0.001,
+    "vertices": 375562,
+    "triangles": 751340,
+    "bbox_min": [
+      -0.11175061798095703,
+      -0.09048338317871094,
+      -0.09902857971191406
+    ],
+    "bbox_max": [
+      0.08643632507324218,
+      0.07658744049072266,
+      0.10903904724121094
+    ],
+    "dims_m": [
+      0.1981869430541992,
+      0.1670708236694336,
+      0.208067626953125
+    ],
+    "dae": "meshes/Carburetor_realistic_scaled.dae",
+    "butterflies": 1
+  },
+  {
+    "name": "carb_01_roundslide_classic",
+    "source": "carb_01_roundslide_classic.obj",
+    "scale": 1.0,
+    "vertices": 6870,
+    "triangles": 13332,
+    "bbox_min": [
+      -0.086329,
+      -0.067,
+      -0.081123
+    ],
+    "bbox_max": [
+      0.088249,
+      0.066692,
+      0.121
+    ],
+    "dims_m": [
+      0.174578,
+      0.133692,
+      0.202123
+    ],
+    "dae": "meshes/carb_01_roundslide_classic.dae",
+    "butterflies": 1
+  },
+  {
+    "name": "carb_02_big_bell_racing",
+    "source": "carb_02_big_bell_racing.obj",
+    "scale": 1.0,
+    "vertices": 9154,
+    "triangles": 17808,
+    "bbox_min": [
+      -0.107079,
+      -0.067,
+      -0.081123
+    ],
+    "bbox_max": [
+      0.088249,
+      0.08328,
+      0.121
+    ],
+    "dims_m": [
+      0.195328,
+      0.15028000000000002,
+      0.202123
+    ],
+    "dae": "meshes/carb_02_big_bell_racing.dae",
+    "butterflies": 1
+  },
+  {
+    "name": "carb_03_turbo_vacuum_sidepod",
+    "source": "carb_03_turbo_vacuum_sidepod.obj",
+    "scale": 1.0,
+    "vertices": 8018,
+    "triangles": 15516,
+    "bbox_min": [
+      -0.082321,
+      -0.080455,
+      -0.081123
+    ],
+    "bbox_max": [
+      0.105386,
+      0.071185,
+      0.121
+    ],
+    "dims_m": [
+      0.187707,
+      0.15164,
+      0.202123
+    ],
+    "dae": "meshes/carb_03_turbo_vacuum_sidepod.dae",
+    "butterflies": 1
+  },
+  {
+    "name": "carb_04_compact_offroad",
+    "source": "carb_04_compact_offroad.obj",
+    "scale": 1.0,
+    "vertices": 6968,
+    "triangles": 13484,
+    "bbox_min": [
+      -0.071389,
+      -0.067,
+      -0.083
+    ],
+    "bbox_max": [
+      0.088249,
+      0.065019,
+      0.121
+    ],
+    "dims_m": [
+      0.159638,
+      0.132019,
+      0.20400000000000001
+    ],
+    "dae": "meshes/carb_04_compact_offroad.dae",
+    "butterflies": 1
+  },
+  {
+    "name": "carb_05_vintage_sidedraft",
+    "source": "carb_05_vintage_sidedraft.obj",
+    "scale": 1.0,
+    "vertices": 8054,
+    "triangles": 15648,
+    "bbox_min": [
+      -0.098779,
+      -0.067,
+      -0.081123
+    ],
+    "bbox_max": [
+      0.088249,
+      0.066692,
+      0.121
+    ],
+    "dims_m": [
+      0.187028,
+      0.133692,
+      0.202123
+    ],
+    "dae": "meshes/carb_05_vintage_sidedraft.dae",
+    "butterflies": 1
+  },
+  {
+    "name": "carb_triple_01_street_bigbody",
+    "source": "carb_triple_01_street_bigbody.obj",
+    "scale": 1.0,
+    "vertices": 18266,
+    "triangles": 35508,
+    "bbox_min": [
+      -0.123359,
+      -0.228604,
+      -0.084
+    ],
+    "bbox_max": [
+      0.146068,
+      0.198,
+      0.145
+    ],
+    "dims_m": [
+      0.26942699999999997,
+      0.426604,
+      0.22899999999999998
+    ],
+    "dae": "meshes/carb_triple_01_street_bigbody.dae",
+    "butterflies": 3
+  },
+  {
+    "name": "carb_triple_02_racing_velocitystack",
+    "source": "carb_triple_02_racing_velocitystack.obj",
+    "scale": 1.0,
+    "vertices": 20568,
+    "triangles": 40196,
+    "bbox_min": [
+      -0.140479,
+      -0.228604,
+      -0.084
+    ],
+    "bbox_max": [
+      0.146068,
+      0.235272,
+      0.145
+    ],
+    "dims_m": [
+      0.286547,
+      0.463876,
+      0.22899999999999998
+    ],
+    "dae": "meshes/carb_triple_02_racing_velocitystack.dae",
+    "butterflies": 3
+  },
+  {
+    "name": "carb_triple_03_touring_diaphragm",
+    "source": "carb_triple_03_touring_diaphragm.obj",
+    "scale": 1.0,
+    "vertices": 18972,
+    "triangles": 36884,
+    "bbox_min": [
+      -0.119079,
+      -0.228604,
+      -0.084
+    ],
+    "bbox_max": [
+      0.166123,
+      0.205011,
+      0.145
+    ],
+    "dims_m": [
+      0.285202,
+      0.433615,
+      0.22899999999999998
+    ],
+    "dae": "meshes/carb_triple_03_touring_diaphragm.dae",
+    "butterflies": 3
+  }
+]

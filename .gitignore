@@ -1,0 +1,24 @@
+# Build artifacts (regenerate with scripts/gerar_zip_mod.py)
+UltraRealismEngine_Prototype.zip
+
+# Patched third-party engine packs — NOT redistributed; build locally
+patched_mods/*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.Python
+*.egg-info/
+.venv/
+venv/
+
+# Editor / OS
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local session / agent tooling (not part of the mod)
+.agent-tools/

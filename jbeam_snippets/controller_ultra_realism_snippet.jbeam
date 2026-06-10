@@ -1,0 +1,20 @@
+// Cole este bloco DENTRO da secao "controller" de uma peca JBeam existente.
+// Exemplo:
+// "controller": [
+//     ["fileName"],
+//     ["vehicleController", {}],
+//     ["ultraRealismEngine", { ... }]
+// ]
+
+["ultraRealismEngine", {
+    "fuelingMode": "auto",
+    "autoDetectEngine": true,
+    "autoFuelingMode": true,
+    "preferCarburetor": false,
+    "autoTuneVECurve": true,
+    "autoDetectCarbSetup": true,
+    "debugLog": true,
+    "diagnosticLog": true,
+    "climatePreset": "game_environment",
+    "useBeamNGEnvironment": true
+}]

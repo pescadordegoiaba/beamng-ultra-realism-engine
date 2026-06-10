@@ -1,0 +1,3169 @@
+{
+  "sourceModels": [
+    {
+      "source": "carb_01_roundslide_classic",
+      "orientation": "downdraft",
+      "mesh": "ure_user_carb_01_roundslide_classic_downdraft",
+      "vertices": 6870,
+      "triangles": 10916
+    },
+    {
+      "source": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "mesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "vertices": 9154,
+      "triangles": 15392
+    },
+    {
+      "source": "carb_03_turbo_vacuum_sidepod",
+      "orientation": "downdraft",
+      "mesh": "ure_user_carb_03_turbo_vacuum_sidepod_downdraft",
+      "vertices": 8018,
+      "triangles": 13100
+    },
+    {
+      "source": "carb_04_compact_offroad",
+      "orientation": "downdraft",
+      "mesh": "ure_user_carb_04_compact_offroad_downdraft",
+      "vertices": 6968,
+      "triangles": 11068
+    },
+    {
+      "source": "carb_05_vintage_sidedraft",
+      "orientation": "downdraft",
+      "mesh": "ure_user_carb_05_vintage_sidedraft_downdraft",
+      "vertices": 8054,
+      "triangles": 13232
+    },
+    {
+      "source": "carb_05_vintage_sidedraft",
+      "orientation": "sidedraft",
+      "mesh": "ure_user_carb_05_vintage_sidedraft_sidedraft",
+      "vertices": 8054,
+      "triangles": 13232
+    },
+    {
+      "source": "carb_triple_01_street_bigbody",
+      "orientation": "sidedraft",
+      "mesh": "ure_user_carb_triple_01_street_bigbody_sidedraft",
+      "vertices": 18266,
+      "triangles": 29728
+    },
+    {
+      "source": "carb_triple_02_racing_velocitystack",
+      "orientation": "sidedraft",
+      "mesh": "ure_user_carb_triple_02_racing_velocitystack_sidedraft",
+      "vertices": 20568,
+      "triangles": 33896
+    },
+    {
+      "source": "carb_triple_03_touring_diaphragm",
+      "orientation": "sidedraft",
+      "mesh": "ure_user_carb_triple_03_touring_diaphragm_sidedraft",
+      "vertices": 18972,
+      "triangles": 31160
+    }
+  ],
+  "carburetors": {
+    "ultra_realism_carb_weber_3236_dgv": {
+      "modelFamily": "compact_offroad",
+      "sourceModel": "carb_04_compact_offroad",
+      "orientation": "downdraft",
+      "scale": 0.842105,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.0703157894736842
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.03368421052631579,
+          0.0,
+          0.08547368421052631
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.048842105263157895,
+          0.06021052631578948
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.13043284210526315
+        ]
+      ],
+      "slideTranslation": [
+        0.03368421052631579,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 32.0,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_04_compact_offroad_downdraft",
+      "butterflyMesh": "ure_motion_weber_3236_dgv_butterfly",
+      "slideMesh": "ure_motion_weber_3236_dgv_slide",
+      "linkageMesh": "ure_motion_weber_3236_dgv_linkage",
+      "filterMesh": "ure_filter_weber_3236_dgv",
+      "tunnelMesh": "ure_tunnel_weber_3236_dgv"
+    },
+    "ultra_realism_carb_weber_3236_dgev": {
+      "modelFamily": "roundslide_classic",
+      "sourceModel": "carb_01_roundslide_classic",
+      "orientation": "downdraft",
+      "scale": 0.8,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.06680000000000001
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.032,
+          0.0,
+          0.08120000000000001
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.046400000000000004,
+          0.05720000000000001
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.13586320000000002
+        ]
+      ],
+      "slideTranslation": [
+        0.032,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 32.0,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_01_roundslide_classic_downdraft",
+      "butterflyMesh": "ure_motion_weber_3236_dgev_butterfly",
+      "slideMesh": "ure_motion_weber_3236_dgev_slide",
+      "linkageMesh": "ure_motion_weber_3236_dgev_linkage",
+      "filterMesh": "ure_filter_weber_3236_dgev",
+      "tunnelMesh": "ure_tunnel_weber_3236_dgev"
+    },
+    "ultra_realism_carb_twin_weber_3236": {
+      "modelFamily": "roundslide_classic",
+      "sourceModel": "carb_01_roundslide_classic",
+      "orientation": "downdraft",
+      "scale": 0.8,
+      "bodyInstances": [
+        [
+          0.0,
+          -0.0512,
+          0.0
+        ],
+        [
+          0.0,
+          0.0512,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          -0.0512,
+          0.0
+        ],
+        [
+          0.0,
+          0.0512,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          -0.0512,
+          0.06680000000000001
+        ],
+        [
+          0.0,
+          0.0512,
+          0.06680000000000001
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.032,
+          -0.0512,
+          0.08120000000000001
+        ],
+        [
+          0.032,
+          0.0512,
+          0.08120000000000001
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          -0.004799999999999999,
+          0.05720000000000001
+        ],
+        [
+          0.0,
+          0.0976,
+          0.05720000000000001
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          -0.0512,
+          0.13586320000000002
+        ],
+        [
+          0.0,
+          0.0512,
+          0.13586320000000002
+        ]
+      ],
+      "slideTranslation": [
+        0.032,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 32.0,
+      "count": 2,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_01_roundslide_classic_downdraft",
+      "butterflyMesh": "ure_motion_twin_weber_3236_butterfly",
+      "slideMesh": "ure_motion_twin_weber_3236_slide",
+      "linkageMesh": "ure_motion_twin_weber_3236_linkage",
+      "filterMesh": "ure_filter_twin_weber_3236",
+      "tunnelMesh": "ure_tunnel_twin_weber_3236"
+    },
+    "ultra_realism_carb_weber_38_dgas": {
+      "modelFamily": "roundslide_classic",
+      "sourceModel": "carb_01_roundslide_classic",
+      "orientation": "downdraft",
+      "scale": 0.95,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.079325
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.038,
+          0.0,
+          0.096425
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.0551,
+          0.067925
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.16133755
+        ]
+      ],
+      "slideTranslation": [
+        0.038,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 38.0,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_01_roundslide_classic_downdraft",
+      "butterflyMesh": "ure_motion_weber_38_dgas_butterfly",
+      "slideMesh": "ure_motion_weber_38_dgas_slide",
+      "linkageMesh": "ure_motion_weber_38_dgas_linkage",
+      "filterMesh": "ure_filter_weber_38_dgas",
+      "tunnelMesh": "ure_tunnel_weber_38_dgas"
+    },
+    "ultra_realism_carb_twin_weber_38_dgas": {
+      "modelFamily": "roundslide_classic",
+      "sourceModel": "carb_01_roundslide_classic",
+      "orientation": "downdraft",
+      "scale": 0.95,
+      "bodyInstances": [
+        [
+          0.0,
+          -0.0608,
+          0.0
+        ],
+        [
+          0.0,
+          0.0608,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          -0.0608,
+          0.0
+        ],
+        [
+          0.0,
+          0.0608,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          -0.0608,
+          0.079325
+        ],
+        [
+          0.0,
+          0.0608,
+          0.079325
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.038,
+          -0.0608,
+          0.096425
+        ],
+        [
+          0.038,
+          0.0608,
+          0.096425
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          -0.005699999999999997,
+          0.067925
+        ],
+        [
+          0.0,
+          0.1159,
+          0.067925
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          -0.0608,
+          0.16133755
+        ],
+        [
+          0.0,
+          0.0608,
+          0.16133755
+        ]
+      ],
+      "slideTranslation": [
+        0.038,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 38.0,
+      "count": 2,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_01_roundslide_classic_downdraft",
+      "butterflyMesh": "ure_motion_twin_weber_38_dgas_butterfly",
+      "slideMesh": "ure_motion_twin_weber_38_dgas_slide",
+      "linkageMesh": "ure_motion_twin_weber_38_dgas_linkage",
+      "filterMesh": "ure_filter_twin_weber_38_dgas",
+      "tunnelMesh": "ure_tunnel_twin_weber_38_dgas"
+    },
+    "ultra_realism_carb_weber_40_dcoe_28": {
+      "modelFamily": "vintage_sidedraft",
+      "sourceModel": "carb_05_vintage_sidedraft",
+      "orientation": "sidedraft",
+      "scale": 1.0,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          -0.0835,
+          0.0,
+          0.0
+        ]
+      ],
+      "slidePivots": [
+        [
+          -0.1015,
+          0.0,
+          0.04
+        ]
+      ],
+      "linkagePivots": [
+        [
+          -0.07150000000000001,
+          0.058,
+          0.0
+        ]
+      ],
+      "inletPivots": [
+        [
+          -0.18227900000000002,
+          0.0,
+          0.0
+        ]
+      ],
+      "slideTranslation": [
+        0.0,
+        0.0,
+        0.04
+      ],
+      "primaryBoreMM": 40.0,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_05_vintage_sidedraft_sidedraft",
+      "butterflyMesh": "ure_motion_weber_40_dcoe_28_butterfly",
+      "slideMesh": "ure_motion_weber_40_dcoe_28_slide",
+      "linkageMesh": "ure_motion_weber_40_dcoe_28_linkage",
+      "filterMesh": "ure_filter_weber_40_dcoe_28",
+      "tunnelMesh": "ure_tunnel_weber_40_dcoe_28"
+    },
+    "ultra_realism_carb_twin_weber_40_dcoe_30": {
+      "modelFamily": "vintage_sidedraft",
+      "sourceModel": "carb_05_vintage_sidedraft",
+      "orientation": "sidedraft",
+      "scale": 1.0,
+      "bodyInstances": [
+        [
+          0.0,
+          -0.064,
+          0.0
+        ],
+        [
+          0.0,
+          0.064,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          -0.064,
+          0.0
+        ],
+        [
+          0.0,
+          0.064,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          -0.0835,
+          -0.064,
+          0.0
+        ],
+        [
+          -0.0835,
+          0.064,
+          0.0
+        ]
+      ],
+      "slidePivots": [
+        [
+          -0.1015,
+          -0.064,
+          0.04
+        ],
+        [
+          -0.1015,
+          0.064,
+          0.04
+        ]
+      ],
+      "linkagePivots": [
+        [
+          -0.07150000000000001,
+          -0.005999999999999998,
+          0.0
+        ],
+        [
+          -0.07150000000000001,
+          0.122,
+          0.0
+        ]
+      ],
+      "inletPivots": [
+        [
+          -0.18227900000000002,
+          -0.064,
+          0.0
+        ],
+        [
+          -0.18227900000000002,
+          0.064,
+          0.0
+        ]
+      ],
+      "slideTranslation": [
+        0.0,
+        0.0,
+        0.04
+      ],
+      "primaryBoreMM": 40.0,
+      "count": 2,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_05_vintage_sidedraft_sidedraft",
+      "butterflyMesh": "ure_motion_twin_weber_40_dcoe_30_butterfly",
+      "slideMesh": "ure_motion_twin_weber_40_dcoe_30_slide",
+      "linkageMesh": "ure_motion_twin_weber_40_dcoe_30_linkage",
+      "filterMesh": "ure_filter_twin_weber_40_dcoe_30",
+      "tunnelMesh": "ure_tunnel_twin_weber_40_dcoe_30"
+    },
+    "ultra_realism_carb_triple_weber_40_dcoe_30": {
+      "modelFamily": "triple_street",
+      "sourceModel": "carb_triple_01_street_bigbody",
+      "orientation": "sidedraft",
+      "scale": 0.833333,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          -0.11833333333333333,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.11833333333333333,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          -0.08133333333333334,
+          -0.11833333333333333,
+          0.0
+        ],
+        [
+          -0.08133333333333334,
+          0.0,
+          0.0
+        ],
+        [
+          -0.08133333333333334,
+          0.11833333333333333,
+          0.0
+        ]
+      ],
+      "slidePivots": [
+        [
+          -0.09633333333333334,
+          -0.11833333333333333,
+          0.03333333333333333
+        ],
+        [
+          -0.09633333333333334,
+          0.0,
+          0.03333333333333333
+        ],
+        [
+          -0.09633333333333334,
+          0.11833333333333333,
+          0.03333333333333333
+        ]
+      ],
+      "linkagePivots": [
+        [
+          -0.07133333333333335,
+          -0.06999999999999999,
+          0.0
+        ],
+        [
+          -0.07133333333333335,
+          0.04833333333333334,
+          0.0
+        ],
+        [
+          -0.07133333333333335,
+          0.16666666666666669,
+          0.0
+        ]
+      ],
+      "inletPivots": [
+        [
+          -0.18413250000000003,
+          -0.11833333333333333,
+          0.0
+        ],
+        [
+          -0.18413250000000003,
+          0.0,
+          0.0
+        ],
+        [
+          -0.18413250000000003,
+          0.11833333333333333,
+          0.0
+        ]
+      ],
+      "slideTranslation": [
+        0.0,
+        0.0,
+        0.03333333333333333
+      ],
+      "primaryBoreMM": 40.0,
+      "count": 3,
+      "usesNativeTripleBody": true,
+      "bodyMesh": "ure_user_carb_triple_01_street_bigbody_sidedraft",
+      "butterflyMesh": "ure_motion_triple_weber_40_dcoe_30_butterfly",
+      "slideMesh": "ure_motion_triple_weber_40_dcoe_30_slide",
+      "linkageMesh": "ure_motion_triple_weber_40_dcoe_30_linkage",
+      "filterMesh": "ure_filter_triple_weber_40_dcoe_30",
+      "tunnelMesh": "ure_tunnel_triple_weber_40_dcoe_30"
+    },
+    "ultra_realism_carb_quad_weber_40_dcoe_32": {
+      "modelFamily": "vintage_sidedraft",
+      "sourceModel": "carb_05_vintage_sidedraft",
+      "orientation": "sidedraft",
+      "scale": 1.0,
+      "bodyInstances": [
+        [
+          0.0,
+          -0.192,
+          0.0
+        ],
+        [
+          0.0,
+          -0.064,
+          0.0
+        ],
+        [
+          0.0,
+          0.064,
+          0.0
+        ],
+        [
+          0.0,
+          0.192,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          -0.192,
+          0.0
+        ],
+        [
+          0.0,
+          -0.064,
+          0.0
+        ],
+        [
+          0.0,
+          0.064,
+          0.0
+        ],
+        [
+          0.0,
+          0.192,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          -0.0835,
+          -0.192,
+          0.0
+        ],
+        [
+          -0.0835,
+          -0.064,
+          0.0
+        ],
+        [
+          -0.0835,
+          0.064,
+          0.0
+        ],
+        [
+          -0.0835,
+          0.192,
+          0.0
+        ]
+      ],
+      "slidePivots": [
+        [
+          -0.1015,
+          -0.192,
+          0.04
+        ],
+        [
+          -0.1015,
+          -0.064,
+          0.04
+        ],
+        [
+          -0.1015,
+          0.064,
+          0.04
+        ],
+        [
+          -0.1015,
+          0.192,
+          0.04
+        ]
+      ],
+      "linkagePivots": [
+        [
+          -0.07150000000000001,
+          -0.134,
+          0.0
+        ],
+        [
+          -0.07150000000000001,
+          -0.005999999999999998,
+          0.0
+        ],
+        [
+          -0.07150000000000001,
+          0.122,
+          0.0
+        ],
+        [
+          -0.07150000000000001,
+          0.25,
+          0.0
+        ]
+      ],
+      "inletPivots": [
+        [
+          -0.18227900000000002,
+          -0.192,
+          0.0
+        ],
+        [
+          -0.18227900000000002,
+          -0.064,
+          0.0
+        ],
+        [
+          -0.18227900000000002,
+          0.064,
+          0.0
+        ],
+        [
+          -0.18227900000000002,
+          0.192,
+          0.0
+        ]
+      ],
+      "slideTranslation": [
+        0.0,
+        0.0,
+        0.04
+      ],
+      "primaryBoreMM": 40.0,
+      "count": 4,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_05_vintage_sidedraft_sidedraft",
+      "butterflyMesh": "ure_motion_quad_weber_40_dcoe_32_butterfly",
+      "slideMesh": "ure_motion_quad_weber_40_dcoe_32_slide",
+      "linkageMesh": "ure_motion_quad_weber_40_dcoe_32_linkage",
+      "filterMesh": "ure_filter_quad_weber_40_dcoe_32",
+      "tunnelMesh": "ure_tunnel_quad_weber_40_dcoe_32"
+    },
+    "ultra_realism_carb_six_weber_40_dcoe_32": {
+      "modelFamily": "triple_touring",
+      "sourceModel": "carb_triple_03_touring_diaphragm",
+      "orientation": "sidedraft",
+      "scale": 0.833333,
+      "bodyInstances": [
+        [
+          0.0,
+          -0.18333333333333335,
+          0.0
+        ],
+        [
+          0.0,
+          0.18333333333333335,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          -0.3016666666666667,
+          0.0
+        ],
+        [
+          0.0,
+          -0.18333333333333335,
+          0.0
+        ],
+        [
+          0.0,
+          -0.06500000000000002,
+          0.0
+        ],
+        [
+          0.0,
+          0.06500000000000002,
+          0.0
+        ],
+        [
+          0.0,
+          0.18333333333333335,
+          0.0
+        ],
+        [
+          0.0,
+          0.3016666666666667,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          -0.08133333333333334,
+          -0.3016666666666667,
+          0.0
+        ],
+        [
+          -0.08133333333333334,
+          -0.18333333333333335,
+          0.0
+        ],
+        [
+          -0.08133333333333334,
+          -0.06500000000000002,
+          0.0
+        ],
+        [
+          -0.08133333333333334,
+          0.06500000000000002,
+          0.0
+        ],
+        [
+          -0.08133333333333334,
+          0.18333333333333335,
+          0.0
+        ],
+        [
+          -0.08133333333333334,
+          0.3016666666666667,
+          0.0
+        ]
+      ],
+      "slidePivots": [
+        [
+          -0.09633333333333334,
+          -0.3016666666666667,
+          0.03333333333333333
+        ],
+        [
+          -0.09633333333333334,
+          -0.18333333333333335,
+          0.03333333333333333
+        ],
+        [
+          -0.09633333333333334,
+          -0.06500000000000002,
+          0.03333333333333333
+        ],
+        [
+          -0.09633333333333334,
+          0.06500000000000002,
+          0.03333333333333333
+        ],
+        [
+          -0.09633333333333334,
+          0.18333333333333335,
+          0.03333333333333333
+        ],
+        [
+          -0.09633333333333334,
+          0.3016666666666667,
+          0.03333333333333333
+        ]
+      ],
+      "linkagePivots": [
+        [
+          -0.07133333333333335,
+          -0.25333333333333335,
+          0.0
+        ],
+        [
+          -0.07133333333333335,
+          -0.135,
+          0.0
+        ],
+        [
+          -0.07133333333333335,
+          -0.016666666666666677,
+          0.0
+        ],
+        [
+          -0.07133333333333335,
+          0.11333333333333336,
+          0.0
+        ],
+        [
+          -0.07133333333333335,
+          0.2316666666666667,
+          0.0
+        ],
+        [
+          -0.07133333333333335,
+          0.35000000000000003,
+          0.0
+        ]
+      ],
+      "inletPivots": [
+        [
+          -0.18056583333333334,
+          -0.3016666666666667,
+          0.0
+        ],
+        [
+          -0.18056583333333334,
+          -0.18333333333333335,
+          0.0
+        ],
+        [
+          -0.18056583333333334,
+          -0.06500000000000002,
+          0.0
+        ],
+        [
+          -0.18056583333333334,
+          0.06500000000000002,
+          0.0
+        ],
+        [
+          -0.18056583333333334,
+          0.18333333333333335,
+          0.0
+        ],
+        [
+          -0.18056583333333334,
+          0.3016666666666667,
+          0.0
+        ]
+      ],
+      "slideTranslation": [
+        0.0,
+        0.0,
+        0.03333333333333333
+      ],
+      "primaryBoreMM": 40.0,
+      "count": 6,
+      "usesNativeTripleBody": true,
+      "bodyMesh": "ure_user_carb_triple_03_touring_diaphragm_sidedraft",
+      "butterflyMesh": "ure_motion_six_weber_40_dcoe_32_butterfly",
+      "slideMesh": "ure_motion_six_weber_40_dcoe_32_slide",
+      "linkageMesh": "ure_motion_six_weber_40_dcoe_32_linkage",
+      "filterMesh": "ure_filter_six_weber_40_dcoe_32",
+      "tunnelMesh": "ure_tunnel_six_weber_40_dcoe_32"
+    },
+    "ultra_realism_carb_weber_45_dcoe_34": {
+      "modelFamily": "vintage_sidedraft",
+      "sourceModel": "carb_05_vintage_sidedraft",
+      "orientation": "sidedraft",
+      "scale": 1.125,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          -0.09393750000000001,
+          0.0,
+          0.0
+        ]
+      ],
+      "slidePivots": [
+        [
+          -0.11418750000000001,
+          0.0,
+          0.045
+        ]
+      ],
+      "linkagePivots": [
+        [
+          -0.08043750000000001,
+          0.06525,
+          0.0
+        ]
+      ],
+      "inletPivots": [
+        [
+          -0.20506387500000003,
+          0.0,
+          0.0
+        ]
+      ],
+      "slideTranslation": [
+        0.0,
+        0.0,
+        0.045
+      ],
+      "primaryBoreMM": 45.0,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_05_vintage_sidedraft_sidedraft",
+      "butterflyMesh": "ure_motion_weber_45_dcoe_34_butterfly",
+      "slideMesh": "ure_motion_weber_45_dcoe_34_slide",
+      "linkageMesh": "ure_motion_weber_45_dcoe_34_linkage",
+      "filterMesh": "ure_filter_weber_45_dcoe_34",
+      "tunnelMesh": "ure_tunnel_weber_45_dcoe_34"
+    },
+    "ultra_realism_carb_twin_weber_45_dcoe_36": {
+      "modelFamily": "vintage_sidedraft",
+      "sourceModel": "carb_05_vintage_sidedraft",
+      "orientation": "sidedraft",
+      "scale": 1.125,
+      "bodyInstances": [
+        [
+          0.0,
+          -0.07200000000000001,
+          0.0
+        ],
+        [
+          0.0,
+          0.07200000000000001,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          -0.07200000000000001,
+          0.0
+        ],
+        [
+          0.0,
+          0.07200000000000001,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          -0.09393750000000001,
+          -0.07200000000000001,
+          0.0
+        ],
+        [
+          -0.09393750000000001,
+          0.07200000000000001,
+          0.0
+        ]
+      ],
+      "slidePivots": [
+        [
+          -0.11418750000000001,
+          -0.07200000000000001,
+          0.045
+        ],
+        [
+          -0.11418750000000001,
+          0.07200000000000001,
+          0.045
+        ]
+      ],
+      "linkagePivots": [
+        [
+          -0.08043750000000001,
+          -0.006750000000000006,
+          0.0
+        ],
+        [
+          -0.08043750000000001,
+          0.13725,
+          0.0
+        ]
+      ],
+      "inletPivots": [
+        [
+          -0.20506387500000003,
+          -0.07200000000000001,
+          0.0
+        ],
+        [
+          -0.20506387500000003,
+          0.07200000000000001,
+          0.0
+        ]
+      ],
+      "slideTranslation": [
+        0.0,
+        0.0,
+        0.045
+      ],
+      "primaryBoreMM": 45.0,
+      "count": 2,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_05_vintage_sidedraft_sidedraft",
+      "butterflyMesh": "ure_motion_twin_weber_45_dcoe_36_butterfly",
+      "slideMesh": "ure_motion_twin_weber_45_dcoe_36_slide",
+      "linkageMesh": "ure_motion_twin_weber_45_dcoe_36_linkage",
+      "filterMesh": "ure_filter_twin_weber_45_dcoe_36",
+      "tunnelMesh": "ure_tunnel_twin_weber_45_dcoe_36"
+    },
+    "ultra_realism_carb_triple_weber_45_dcoe_36": {
+      "modelFamily": "triple_racing",
+      "sourceModel": "carb_triple_02_racing_velocitystack",
+      "orientation": "sidedraft",
+      "scale": 0.9375,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          -0.133125,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.133125,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          -0.09150000000000001,
+          -0.133125,
+          0.0
+        ],
+        [
+          -0.09150000000000001,
+          0.0,
+          0.0
+        ],
+        [
+          -0.09150000000000001,
+          0.133125,
+          0.0
+        ]
+      ],
+      "slidePivots": [
+        [
+          -0.10837500000000001,
+          -0.133125,
+          0.0375
+        ],
+        [
+          -0.10837500000000001,
+          0.0,
+          0.0375
+        ],
+        [
+          -0.10837500000000001,
+          0.133125,
+          0.0375
+        ]
+      ],
+      "linkagePivots": [
+        [
+          -0.08025000000000002,
+          -0.07874999999999999,
+          0.0
+        ],
+        [
+          -0.08025000000000002,
+          0.054375,
+          0.0
+        ],
+        [
+          -0.08025000000000002,
+          0.1875,
+          0.0
+        ]
+      ],
+      "inletPivots": [
+        [
+          -0.2231990625,
+          -0.133125,
+          0.0
+        ],
+        [
+          -0.2231990625,
+          0.0,
+          0.0
+        ],
+        [
+          -0.2231990625,
+          0.133125,
+          0.0
+        ]
+      ],
+      "slideTranslation": [
+        0.0,
+        0.0,
+        0.0375
+      ],
+      "primaryBoreMM": 45.0,
+      "count": 3,
+      "usesNativeTripleBody": true,
+      "bodyMesh": "ure_user_carb_triple_02_racing_velocitystack_sidedraft",
+      "butterflyMesh": "ure_motion_triple_weber_45_dcoe_36_butterfly",
+      "slideMesh": "ure_motion_triple_weber_45_dcoe_36_slide",
+      "linkageMesh": "ure_motion_triple_weber_45_dcoe_36_linkage",
+      "filterMesh": "ure_filter_triple_weber_45_dcoe_36",
+      "tunnelMesh": "ure_tunnel_triple_weber_45_dcoe_36"
+    },
+    "ultra_realism_carb_quad_weber_45_dcoe_38": {
+      "modelFamily": "vintage_sidedraft",
+      "sourceModel": "carb_05_vintage_sidedraft",
+      "orientation": "sidedraft",
+      "scale": 1.125,
+      "bodyInstances": [
+        [
+          0.0,
+          -0.21600000000000003,
+          0.0
+        ],
+        [
+          0.0,
+          -0.07200000000000001,
+          0.0
+        ],
+        [
+          0.0,
+          0.07200000000000001,
+          0.0
+        ],
+        [
+          0.0,
+          0.21600000000000003,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          -0.21600000000000003,
+          0.0
+        ],
+        [
+          0.0,
+          -0.07200000000000001,
+          0.0
+        ],
+        [
+          0.0,
+          0.07200000000000001,
+          0.0
+        ],
+        [
+          0.0,
+          0.21600000000000003,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          -0.09393750000000001,
+          -0.21600000000000003,
+          0.0
+        ],
+        [
+          -0.09393750000000001,
+          -0.07200000000000001,
+          0.0
+        ],
+        [
+          -0.09393750000000001,
+          0.07200000000000001,
+          0.0
+        ],
+        [
+          -0.09393750000000001,
+          0.21600000000000003,
+          0.0
+        ]
+      ],
+      "slidePivots": [
+        [
+          -0.11418750000000001,
+          -0.21600000000000003,
+          0.045
+        ],
+        [
+          -0.11418750000000001,
+          -0.07200000000000001,
+          0.045
+        ],
+        [
+          -0.11418750000000001,
+          0.07200000000000001,
+          0.045
+        ],
+        [
+          -0.11418750000000001,
+          0.21600000000000003,
+          0.045
+        ]
+      ],
+      "linkagePivots": [
+        [
+          -0.08043750000000001,
+          -0.15075000000000002,
+          0.0
+        ],
+        [
+          -0.08043750000000001,
+          -0.006750000000000006,
+          0.0
+        ],
+        [
+          -0.08043750000000001,
+          0.13725,
+          0.0
+        ],
+        [
+          -0.08043750000000001,
+          0.28125,
+          0.0
+        ]
+      ],
+      "inletPivots": [
+        [
+          -0.20506387500000003,
+          -0.21600000000000003,
+          0.0
+        ],
+        [
+          -0.20506387500000003,
+          -0.07200000000000001,
+          0.0
+        ],
+        [
+          -0.20506387500000003,
+          0.07200000000000001,
+          0.0
+        ],
+        [
+          -0.20506387500000003,
+          0.21600000000000003,
+          0.0
+        ]
+      ],
+      "slideTranslation": [
+        0.0,
+        0.0,
+        0.045
+      ],
+      "primaryBoreMM": 45.0,
+      "count": 4,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_05_vintage_sidedraft_sidedraft",
+      "butterflyMesh": "ure_motion_quad_weber_45_dcoe_38_butterfly",
+      "slideMesh": "ure_motion_quad_weber_45_dcoe_38_slide",
+      "linkageMesh": "ure_motion_quad_weber_45_dcoe_38_linkage",
+      "filterMesh": "ure_filter_quad_weber_45_dcoe_38",
+      "tunnelMesh": "ure_tunnel_quad_weber_45_dcoe_38"
+    },
+    "ultra_realism_carb_weber_48_idf_40": {
+      "modelFamily": "big_bell_racing",
+      "sourceModel": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "scale": 1.142857,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.09542857142857143
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.045714285714285714,
+          0.0,
+          0.116
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.06628571428571428,
+          0.08171428571428573
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.2178045714285714
+        ]
+      ],
+      "slideTranslation": [
+        0.045714285714285714,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 48.0,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "butterflyMesh": "ure_motion_weber_48_idf_40_butterfly",
+      "slideMesh": "ure_motion_weber_48_idf_40_slide",
+      "linkageMesh": "ure_motion_weber_48_idf_40_linkage",
+      "filterMesh": "ure_filter_weber_48_idf_40",
+      "tunnelMesh": "ure_tunnel_weber_48_idf_40"
+    },
+    "ultra_realism_carb_quad_weber_48_ida_40": {
+      "modelFamily": "big_bell_racing",
+      "sourceModel": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "scale": 1.142857,
+      "bodyInstances": [
+        [
+          -0.07314285714285713,
+          -0.07314285714285713,
+          0.0
+        ],
+        [
+          0.07314285714285713,
+          -0.07314285714285713,
+          0.0
+        ],
+        [
+          -0.07314285714285713,
+          0.07314285714285713,
+          0.0
+        ],
+        [
+          0.07314285714285713,
+          0.07314285714285713,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          -0.07314285714285713,
+          -0.07314285714285713,
+          0.0
+        ],
+        [
+          0.07314285714285713,
+          -0.07314285714285713,
+          0.0
+        ],
+        [
+          -0.07314285714285713,
+          0.07314285714285713,
+          0.0
+        ],
+        [
+          0.07314285714285713,
+          0.07314285714285713,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          -0.07314285714285713,
+          -0.07314285714285713,
+          0.09542857142857143
+        ],
+        [
+          0.07314285714285713,
+          -0.07314285714285713,
+          0.09542857142857143
+        ],
+        [
+          -0.07314285714285713,
+          0.07314285714285713,
+          0.09542857142857143
+        ],
+        [
+          0.07314285714285713,
+          0.07314285714285713,
+          0.09542857142857143
+        ]
+      ],
+      "slidePivots": [
+        [
+          -0.02742857142857142,
+          -0.07314285714285713,
+          0.116
+        ],
+        [
+          0.11885714285714286,
+          -0.07314285714285713,
+          0.116
+        ],
+        [
+          -0.02742857142857142,
+          0.07314285714285713,
+          0.116
+        ],
+        [
+          0.11885714285714286,
+          0.07314285714285713,
+          0.116
+        ]
+      ],
+      "linkagePivots": [
+        [
+          -0.07314285714285713,
+          -0.006857142857142853,
+          0.08171428571428573
+        ],
+        [
+          0.07314285714285713,
+          -0.006857142857142853,
+          0.08171428571428573
+        ],
+        [
+          -0.07314285714285713,
+          0.1394285714285714,
+          0.08171428571428573
+        ],
+        [
+          0.07314285714285713,
+          0.1394285714285714,
+          0.08171428571428573
+        ]
+      ],
+      "inletPivots": [
+        [
+          -0.07314285714285713,
+          -0.07314285714285713,
+          0.2178045714285714
+        ],
+        [
+          0.07314285714285713,
+          -0.07314285714285713,
+          0.2178045714285714
+        ],
+        [
+          -0.07314285714285713,
+          0.07314285714285713,
+          0.2178045714285714
+        ],
+        [
+          0.07314285714285713,
+          0.07314285714285713,
+          0.2178045714285714
+        ]
+      ],
+      "slideTranslation": [
+        0.045714285714285714,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 48.0,
+      "count": 4,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "butterflyMesh": "ure_motion_quad_weber_48_ida_40_butterfly",
+      "slideMesh": "ure_motion_quad_weber_48_ida_40_slide",
+      "linkageMesh": "ure_motion_quad_weber_48_ida_40_linkage",
+      "filterMesh": "ure_filter_quad_weber_48_ida_40",
+      "tunnelMesh": "ure_tunnel_quad_weber_48_ida_40"
+    },
+    "ultra_realism_carb_holley_1904_1bbl": {
+      "modelFamily": "vintage_sidedraft",
+      "sourceModel": "carb_05_vintage_sidedraft",
+      "orientation": "downdraft",
+      "scale": 0.9,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.07515000000000001
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.036000000000000004,
+          0.0,
+          0.09135000000000001
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.0522,
+          0.06435
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.16405110000000003
+        ]
+      ],
+      "slideTranslation": [
+        0.036000000000000004,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 36.0,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_05_vintage_sidedraft_downdraft",
+      "butterflyMesh": "ure_motion_holley_1904_1bbl_butterfly",
+      "slideMesh": "ure_motion_holley_1904_1bbl_slide",
+      "linkageMesh": "ure_motion_holley_1904_1bbl_linkage",
+      "filterMesh": "ure_filter_holley_1904_1bbl",
+      "tunnelMesh": "ure_tunnel_holley_1904_1bbl"
+    },
+    "ultra_realism_carb_holley_2300_350": {
+      "modelFamily": "compact_offroad",
+      "sourceModel": "carb_04_compact_offroad",
+      "orientation": "downdraft",
+      "scale": 1.0,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.0835
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.04,
+          0.0,
+          0.1015
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.058,
+          0.07150000000000001
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.154889
+        ]
+      ],
+      "slideTranslation": [
+        0.04,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 38.0,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_04_compact_offroad_downdraft",
+      "butterflyMesh": "ure_motion_holley_2300_350_butterfly",
+      "slideMesh": "ure_motion_holley_2300_350_slide",
+      "linkageMesh": "ure_motion_holley_2300_350_linkage",
+      "filterMesh": "ure_filter_holley_2300_350",
+      "tunnelMesh": "ure_tunnel_holley_2300_350"
+    },
+    "ultra_realism_carb_holley_2300_500": {
+      "modelFamily": "compact_offroad",
+      "sourceModel": "carb_04_compact_offroad",
+      "orientation": "downdraft",
+      "scale": 1.128947,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.0942671052631579
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.04515789473684211,
+          0.0,
+          0.11458815789473685
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.06547894736842105,
+          0.08071973684210527
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.17486152894736842
+        ]
+      ],
+      "slideTranslation": [
+        0.04515789473684211,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 42.9,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_04_compact_offroad_downdraft",
+      "butterflyMesh": "ure_motion_holley_2300_500_butterfly",
+      "slideMesh": "ure_motion_holley_2300_500_slide",
+      "linkageMesh": "ure_motion_holley_2300_500_linkage",
+      "filterMesh": "ure_filter_holley_2300_500",
+      "tunnelMesh": "ure_tunnel_holley_2300_500"
+    },
+    "ultra_realism_carb_holley_4160_390_vs": {
+      "modelFamily": "turbo_vacuum_sidepod",
+      "sourceModel": "carb_03_turbo_vacuum_sidepod",
+      "orientation": "downdraft",
+      "scale": 0.9925,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.08287375000000001
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.039700000000000006,
+          0.0,
+          0.10073875000000002
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.057565000000000005,
+          0.07096375
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.1645773425
+        ]
+      ],
+      "slideTranslation": [
+        0.039700000000000006,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 39.7,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_03_turbo_vacuum_sidepod_downdraft",
+      "butterflyMesh": "ure_motion_holley_4160_390_vs_butterfly",
+      "slideMesh": "ure_motion_holley_4160_390_vs_slide",
+      "linkageMesh": "ure_motion_holley_4160_390_vs_linkage",
+      "filterMesh": "ure_filter_holley_4160_390_vs",
+      "tunnelMesh": "ure_tunnel_holley_4160_390_vs"
+    },
+    "ultra_realism_carb_holley_4160_600_vs": {
+      "modelFamily": "turbo_vacuum_sidepod",
+      "sourceModel": "carb_03_turbo_vacuum_sidepod",
+      "orientation": "downdraft",
+      "scale": 0.9925,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.08287375000000001
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.039700000000000006,
+          0.0,
+          0.10073875000000002
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.057565000000000005,
+          0.07096375
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.1645773425
+        ]
+      ],
+      "slideTranslation": [
+        0.039700000000000006,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 39.7,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_03_turbo_vacuum_sidepod_downdraft",
+      "butterflyMesh": "ure_motion_holley_4160_600_vs_butterfly",
+      "slideMesh": "ure_motion_holley_4160_600_vs_slide",
+      "linkageMesh": "ure_motion_holley_4160_600_vs_linkage",
+      "filterMesh": "ure_filter_holley_4160_600_vs",
+      "tunnelMesh": "ure_tunnel_holley_4160_600_vs"
+    },
+    "ultra_realism_carb_holley_4150_600_dp": {
+      "modelFamily": "roundslide_classic",
+      "sourceModel": "carb_01_roundslide_classic",
+      "orientation": "downdraft",
+      "scale": 0.9925,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.08287375000000001
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.039700000000000006,
+          0.0,
+          0.10073875000000002
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.057565000000000005,
+          0.07096375
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.16855528250000001
+        ]
+      ],
+      "slideTranslation": [
+        0.039700000000000006,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 39.7,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_01_roundslide_classic_downdraft",
+      "butterflyMesh": "ure_motion_holley_4150_600_dp_butterfly",
+      "slideMesh": "ure_motion_holley_4150_600_dp_slide",
+      "linkageMesh": "ure_motion_holley_4150_600_dp_linkage",
+      "filterMesh": "ure_filter_holley_4150_600_dp",
+      "tunnelMesh": "ure_tunnel_holley_4150_600_dp"
+    },
+    "ultra_realism_carb_holley_4150_650_dp": {
+      "modelFamily": "roundslide_classic",
+      "sourceModel": "carb_01_roundslide_classic",
+      "orientation": "downdraft",
+      "scale": 1.0325,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.08621375
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.041299999999999996,
+          0.0,
+          0.10479875000000001
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.059885,
+          0.07382375000000001
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.1753484425
+        ]
+      ],
+      "slideTranslation": [
+        0.041299999999999996,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 41.3,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_01_roundslide_classic_downdraft",
+      "butterflyMesh": "ure_motion_holley_4150_650_dp_butterfly",
+      "slideMesh": "ure_motion_holley_4150_650_dp_slide",
+      "linkageMesh": "ure_motion_holley_4150_650_dp_linkage",
+      "filterMesh": "ure_filter_holley_4150_650_dp",
+      "tunnelMesh": "ure_tunnel_holley_4150_650_dp"
+    },
+    "ultra_realism_carb_holley_4150_700_dp": {
+      "modelFamily": "roundslide_classic",
+      "sourceModel": "carb_01_roundslide_classic",
+      "orientation": "downdraft",
+      "scale": 1.0725,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.08955375
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.0429,
+          0.0,
+          0.10885875
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.062205,
+          0.07668375000000001
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.1821416025
+        ]
+      ],
+      "slideTranslation": [
+        0.0429,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 42.9,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_01_roundslide_classic_downdraft",
+      "butterflyMesh": "ure_motion_holley_4150_700_dp_butterfly",
+      "slideMesh": "ure_motion_holley_4150_700_dp_slide",
+      "linkageMesh": "ure_motion_holley_4150_700_dp_linkage",
+      "filterMesh": "ure_filter_holley_4150_700_dp",
+      "tunnelMesh": "ure_tunnel_holley_4150_700_dp"
+    },
+    "ultra_realism_carb_holley_4150_750_vs": {
+      "modelFamily": "turbo_vacuum_sidepod",
+      "sourceModel": "carb_03_turbo_vacuum_sidepod",
+      "orientation": "downdraft",
+      "scale": 1.0725,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.08955375
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.0429,
+          0.0,
+          0.10885875
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.062205,
+          0.07668375000000001
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.1778430225
+        ]
+      ],
+      "slideTranslation": [
+        0.0429,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 42.9,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_03_turbo_vacuum_sidepod_downdraft",
+      "butterflyMesh": "ure_motion_holley_4150_750_vs_butterfly",
+      "slideMesh": "ure_motion_holley_4150_750_vs_slide",
+      "linkageMesh": "ure_motion_holley_4150_750_vs_linkage",
+      "filterMesh": "ure_filter_holley_4150_750_vs",
+      "tunnelMesh": "ure_tunnel_holley_4150_750_vs"
+    },
+    "ultra_realism_carb_holley_4150_750_dp": {
+      "modelFamily": "big_bell_racing",
+      "sourceModel": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "scale": 1.021429,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.0852892857142857
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.040857142857142856,
+          0.0,
+          0.103675
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.05924285714285714,
+          0.07303214285714286
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.1946628357142857
+        ]
+      ],
+      "slideTranslation": [
+        0.040857142857142856,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 42.9,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "butterflyMesh": "ure_motion_holley_4150_750_dp_butterfly",
+      "slideMesh": "ure_motion_holley_4150_750_dp_slide",
+      "linkageMesh": "ure_motion_holley_4150_750_dp_linkage",
+      "filterMesh": "ure_filter_holley_4150_750_dp",
+      "tunnelMesh": "ure_tunnel_holley_4150_750_dp"
+    },
+    "ultra_realism_carb_holley_4150_800_dp": {
+      "modelFamily": "big_bell_racing",
+      "sourceModel": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "scale": 1.040476,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.08687976190476192
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.041619047619047625,
+          0.0,
+          0.10560833333333335
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.06034761904761905,
+          0.07439404761904764
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.19829291190476192
+        ]
+      ],
+      "slideTranslation": [
+        0.041619047619047625,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 43.7,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "butterflyMesh": "ure_motion_holley_4150_800_dp_butterfly",
+      "slideMesh": "ure_motion_holley_4150_800_dp_slide",
+      "linkageMesh": "ure_motion_holley_4150_800_dp_linkage",
+      "filterMesh": "ure_filter_holley_4150_800_dp",
+      "tunnelMesh": "ure_tunnel_holley_4150_800_dp"
+    },
+    "ultra_realism_carb_holley_4150_850_dp": {
+      "modelFamily": "big_bell_racing",
+      "sourceModel": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "scale": 1.059524,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.0884702380952381
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.04238095238095238,
+          0.0,
+          0.10754166666666667
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.06145238095238095,
+          0.0757559523809524
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.2019229880952381
+        ]
+      ],
+      "slideTranslation": [
+        0.04238095238095238,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 44.5,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "butterflyMesh": "ure_motion_holley_4150_850_dp_butterfly",
+      "slideMesh": "ure_motion_holley_4150_850_dp_slide",
+      "linkageMesh": "ure_motion_holley_4150_850_dp_linkage",
+      "filterMesh": "ure_filter_holley_4150_850_dp",
+      "tunnelMesh": "ure_tunnel_holley_4150_850_dp"
+    },
+    "ultra_realism_carb_holley_4500_950": {
+      "modelFamily": "big_bell_racing",
+      "sourceModel": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "scale": 1.209524,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.1009952380952381
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.04838095238095238,
+          0.0,
+          0.12276666666666666
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.07015238095238095,
+          0.08648095238095238
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.2305098380952381
+        ]
+      ],
+      "slideTranslation": [
+        0.04838095238095238,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 50.8,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "butterflyMesh": "ure_motion_holley_4500_950_butterfly",
+      "slideMesh": "ure_motion_holley_4500_950_slide",
+      "linkageMesh": "ure_motion_holley_4500_950_linkage",
+      "filterMesh": "ure_filter_holley_4500_950",
+      "tunnelMesh": "ure_tunnel_holley_4500_950"
+    },
+    "ultra_realism_carb_holley_4500_1050": {
+      "modelFamily": "big_bell_racing",
+      "sourceModel": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "scale": 1.247619,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.10417619047619048
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.0499047619047619,
+          0.0,
+          0.12663333333333335
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.07236190476190477,
+          0.08920476190476191
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.23776999047619046
+        ]
+      ],
+      "slideTranslation": [
+        0.0499047619047619,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 52.4,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "butterflyMesh": "ure_motion_holley_4500_1050_butterfly",
+      "slideMesh": "ure_motion_holley_4500_1050_slide",
+      "linkageMesh": "ure_motion_holley_4500_1050_linkage",
+      "filterMesh": "ure_filter_holley_4500_1050",
+      "tunnelMesh": "ure_tunnel_holley_4500_1050"
+    },
+    "ultra_realism_carb_edelbrock_avs2_500": {
+      "modelFamily": "turbo_vacuum_sidepod",
+      "sourceModel": "carb_03_turbo_vacuum_sidepod",
+      "orientation": "downdraft",
+      "scale": 0.89,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.074315
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.0356,
+          0.0,
+          0.09033500000000001
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.051620000000000006,
+          0.06363500000000001
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.14758069
+        ]
+      ],
+      "slideTranslation": [
+        0.0356,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 35.6,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_03_turbo_vacuum_sidepod_downdraft",
+      "butterflyMesh": "ure_motion_edelbrock_avs2_500_butterfly",
+      "slideMesh": "ure_motion_edelbrock_avs2_500_slide",
+      "linkageMesh": "ure_motion_edelbrock_avs2_500_linkage",
+      "filterMesh": "ure_filter_edelbrock_avs2_500",
+      "tunnelMesh": "ure_tunnel_edelbrock_avs2_500"
+    },
+    "ultra_realism_carb_edelbrock_avs2_650": {
+      "modelFamily": "turbo_vacuum_sidepod",
+      "sourceModel": "carb_03_turbo_vacuum_sidepod",
+      "orientation": "downdraft",
+      "scale": 0.915,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.07640250000000001
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.0366,
+          0.0,
+          0.09287250000000001
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.053070000000000006,
+          0.06542250000000001
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.151726215
+        ]
+      ],
+      "slideTranslation": [
+        0.0366,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 36.6,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_03_turbo_vacuum_sidepod_downdraft",
+      "butterflyMesh": "ure_motion_edelbrock_avs2_650_butterfly",
+      "slideMesh": "ure_motion_edelbrock_avs2_650_slide",
+      "linkageMesh": "ure_motion_edelbrock_avs2_650_linkage",
+      "filterMesh": "ure_filter_edelbrock_avs2_650",
+      "tunnelMesh": "ure_tunnel_edelbrock_avs2_650"
+    },
+    "ultra_realism_carb_edelbrock_avs2_800": {
+      "modelFamily": "turbo_vacuum_sidepod",
+      "sourceModel": "carb_03_turbo_vacuum_sidepod",
+      "orientation": "downdraft",
+      "scale": 0.9925,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.08287375000000001
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.039700000000000006,
+          0.0,
+          0.10073875000000002
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.057565000000000005,
+          0.07096375
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.1645773425
+        ]
+      ],
+      "slideTranslation": [
+        0.039700000000000006,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 39.7,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_03_turbo_vacuum_sidepod_downdraft",
+      "butterflyMesh": "ure_motion_edelbrock_avs2_800_butterfly",
+      "slideMesh": "ure_motion_edelbrock_avs2_800_slide",
+      "linkageMesh": "ure_motion_edelbrock_avs2_800_linkage",
+      "filterMesh": "ure_filter_edelbrock_avs2_800",
+      "tunnelMesh": "ure_tunnel_edelbrock_avs2_800"
+    },
+    "ultra_realism_carb_edelbrock_performer_600": {
+      "modelFamily": "turbo_vacuum_sidepod",
+      "sourceModel": "carb_03_turbo_vacuum_sidepod",
+      "orientation": "downdraft",
+      "scale": 0.915,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.07640250000000001
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.0366,
+          0.0,
+          0.09287250000000001
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.053070000000000006,
+          0.06542250000000001
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.151726215
+        ]
+      ],
+      "slideTranslation": [
+        0.0366,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 36.6,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_03_turbo_vacuum_sidepod_downdraft",
+      "butterflyMesh": "ure_motion_edelbrock_performer_600_butterfly",
+      "slideMesh": "ure_motion_edelbrock_performer_600_slide",
+      "linkageMesh": "ure_motion_edelbrock_performer_600_linkage",
+      "filterMesh": "ure_filter_edelbrock_performer_600",
+      "tunnelMesh": "ure_tunnel_edelbrock_performer_600"
+    },
+    "ultra_realism_carb_carter_afb_750": {
+      "modelFamily": "turbo_vacuum_sidepod",
+      "sourceModel": "carb_03_turbo_vacuum_sidepod",
+      "orientation": "downdraft",
+      "scale": 0.9925,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.08287375000000001
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.039700000000000006,
+          0.0,
+          0.10073875000000002
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.057565000000000005,
+          0.07096375
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.1645773425
+        ]
+      ],
+      "slideTranslation": [
+        0.039700000000000006,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 39.7,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_03_turbo_vacuum_sidepod_downdraft",
+      "butterflyMesh": "ure_motion_carter_afb_750_butterfly",
+      "slideMesh": "ure_motion_carter_afb_750_slide",
+      "linkageMesh": "ure_motion_carter_afb_750_linkage",
+      "filterMesh": "ure_filter_carter_afb_750",
+      "tunnelMesh": "ure_tunnel_carter_afb_750"
+    },
+    "ultra_realism_carb_quick_fuel_580_vs": {
+      "modelFamily": "turbo_vacuum_sidepod",
+      "sourceModel": "carb_03_turbo_vacuum_sidepod",
+      "orientation": "downdraft",
+      "scale": 0.9925,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.08287375000000001
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.039700000000000006,
+          0.0,
+          0.10073875000000002
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.057565000000000005,
+          0.07096375
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.1645773425
+        ]
+      ],
+      "slideTranslation": [
+        0.039700000000000006,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 39.7,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_03_turbo_vacuum_sidepod_downdraft",
+      "butterflyMesh": "ure_motion_quick_fuel_580_vs_butterfly",
+      "slideMesh": "ure_motion_quick_fuel_580_vs_slide",
+      "linkageMesh": "ure_motion_quick_fuel_580_vs_linkage",
+      "filterMesh": "ure_filter_quick_fuel_580_vs",
+      "tunnelMesh": "ure_tunnel_quick_fuel_580_vs"
+    },
+    "ultra_realism_carb_quick_fuel_650_ms": {
+      "modelFamily": "big_bell_racing",
+      "sourceModel": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "scale": 0.983333,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.08210833333333334
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.03933333333333333,
+          0.0,
+          0.09980833333333333
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.05703333333333333,
+          0.07030833333333333
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.18740268333333332
+        ]
+      ],
+      "slideTranslation": [
+        0.03933333333333333,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 41.3,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "butterflyMesh": "ure_motion_quick_fuel_650_ms_butterfly",
+      "slideMesh": "ure_motion_quick_fuel_650_ms_slide",
+      "linkageMesh": "ure_motion_quick_fuel_650_ms_linkage",
+      "filterMesh": "ure_filter_quick_fuel_650_ms",
+      "tunnelMesh": "ure_tunnel_quick_fuel_650_ms"
+    },
+    "ultra_realism_carb_quick_fuel_750_annular": {
+      "modelFamily": "big_bell_racing",
+      "sourceModel": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "scale": 1.021429,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.0852892857142857
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.040857142857142856,
+          0.0,
+          0.103675
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.05924285714285714,
+          0.07303214285714286
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.1946628357142857
+        ]
+      ],
+      "slideTranslation": [
+        0.040857142857142856,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 42.9,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "butterflyMesh": "ure_motion_quick_fuel_750_annular_butterfly",
+      "slideMesh": "ure_motion_quick_fuel_750_annular_slide",
+      "linkageMesh": "ure_motion_quick_fuel_750_annular_linkage",
+      "filterMesh": "ure_filter_quick_fuel_750_annular",
+      "tunnelMesh": "ure_tunnel_quick_fuel_750_annular"
+    },
+    "ultra_realism_carb_quick_fuel_850_race": {
+      "modelFamily": "big_bell_racing",
+      "sourceModel": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "scale": 1.059524,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.0884702380952381
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.04238095238095238,
+          0.0,
+          0.10754166666666667
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.06145238095238095,
+          0.0757559523809524
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.2019229880952381
+        ]
+      ],
+      "slideTranslation": [
+        0.04238095238095238,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 44.5,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "butterflyMesh": "ure_motion_quick_fuel_850_race_butterfly",
+      "slideMesh": "ure_motion_quick_fuel_850_race_slide",
+      "linkageMesh": "ure_motion_quick_fuel_850_race_linkage",
+      "filterMesh": "ure_filter_quick_fuel_850_race",
+      "tunnelMesh": "ure_tunnel_quick_fuel_850_race"
+    },
+    "ultra_realism_carb_speed_demon_750_annular": {
+      "modelFamily": "big_bell_racing",
+      "sourceModel": "carb_02_big_bell_racing",
+      "orientation": "downdraft",
+      "scale": 1.021429,
+      "bodyInstances": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "carbCenters": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "butterflyPivots": [
+        [
+          0.0,
+          0.0,
+          0.0852892857142857
+        ]
+      ],
+      "slidePivots": [
+        [
+          0.040857142857142856,
+          0.0,
+          0.103675
+        ]
+      ],
+      "linkagePivots": [
+        [
+          0.0,
+          0.05924285714285714,
+          0.07303214285714286
+        ]
+      ],
+      "inletPivots": [
+        [
+          0.0,
+          0.0,
+          0.1946628357142857
+        ]
+      ],
+      "slideTranslation": [
+        0.040857142857142856,
+        0.0,
+        0.0
+      ],
+      "primaryBoreMM": 42.9,
+      "count": 1,
+      "usesNativeTripleBody": false,
+      "bodyMesh": "ure_user_carb_02_big_bell_racing_downdraft",
+      "butterflyMesh": "ure_motion_speed_demon_750_annular_butterfly",
+      "slideMesh": "ure_motion_speed_demon_750_annular_slide",
+      "linkageMesh": "ure_motion_speed_demon_750_annular_linkage",
+      "filterMesh": "ure_filter_speed_demon_750_annular",
+      "tunnelMesh": "ure_tunnel_speed_demon_750_annular"
+    }
+  }
+}
