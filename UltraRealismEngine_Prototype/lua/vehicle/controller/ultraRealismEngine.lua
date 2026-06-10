@@ -19,7 +19,7 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.14.8"
+local MOD_VERSION = "0.14.9"
 
 local cfg = {}
 local st = {}
@@ -222,6 +222,29 @@ local function applyIdleStallGuard(physicsRPM, torqueFactor, throttle)
     torqueFactor = math.max(torqueFactor, lerp(cfg.idleStallGuardMinTorque, cfg.startMinTorqueFactor, boost))
   end
   return torqueFactor
+end
+
+-- BeamNG applies powertrain.update() before controller.update() each physics step.
+-- Carb restriction is irrelevant at idle (demand~0), so scaling torque there only
+-- fights the native idle governor and triggers vehicle.engine.isStalling UI.
+local function resolveAppliedTorqueFactor(rawTorqueFactor, inductionLoad, throttle)
+  if not cfg.loadProportionalEngineEffect then return rawTorqueFactor end
+  local demandSignal = math.max(inductionLoad, st.venturiDemandRatio or 0, throttle * 0.30)
+  local blend = clamp(demandSignal * cfg.loadProportionalEngineEffectGain, 0, 1)
+  st.engineEffectLoadBlend = blend
+  return finiteNonNegative(lerp(1.0, rawTorqueFactor, blend), 1)
+end
+
+local function publishNativeRunningState(physicsRPM, appliedTorqueFactor, throttle)
+  if not cfg.suppressFalseStallUI or not engine then return end
+  local starterEngaged = clamp(tonumber(engine.starterEngagedCoef) or 0, 0, 1)
+  if starterEngaged > 0 then return end
+  local stallGuardRPM = getNativeStallGuardRPM()
+  local severeFailure = math.max(st.vaporLock or 0, st.carbIce or 0, st.misfire or 0)
+  if physicsRPM > stallGuardRPM * 0.90 and appliedTorqueFactor > 0.60 and severeFailure < 0.85 and throttle < 0.55 then
+    setElectricsValue("engineRunning", 1)
+    setElectricsValue("running", 1)
+  end
 end
 
 local function usesNativePartSync()
@@ -1991,6 +2014,12 @@ local function applyEngineEffectCoef()
 end
 
 local function updatePhysics()
+  -- Re-apply every physics substep so the next powertrain.update() sees the latest factor.
+  -- Native order is powertrain.update -> controller.update, so this always leads by one substep.
+  applyEngineEffectCoef()
+end
+
+local function updateWheelsIntermediate(_dt)
   applyEngineEffectCoef()
 end
 
@@ -2159,11 +2188,14 @@ local function update(dt)
   protectedMin = lerp(protectedMin, 0, clamp((severeFailure - 0.78) / 0.22, 0, 1))
   torqueFactor = math.max(torqueFactor, protectedMin)
   torqueFactor = applyIdleStallGuard(physicsRPM, torqueFactor, throttle)
+  local appliedTorqueFactor = resolveAppliedTorqueFactor(torqueFactor, inductionLoad, throttle)
+  st.appliedTorqueFactor = appliedTorqueFactor
 
   updateThermalAndFailures(dt, rpm, throttle, tempC, pressurePa, humidity, lambda, advanceRisk, startProtection)
   updateSuspensionModel(dt, driverThrottle, brake, steering, speed)
-  applyTorqueAndFriction(torqueFactor)
-  clearFalseStallState(physicsRPM, torqueFactor, throttle)
+  applyTorqueAndFriction(appliedTorqueFactor)
+  clearFalseStallState(physicsRPM, appliedTorqueFactor, throttle)
+  publishNativeRunningState(physicsRPM, appliedTorqueFactor, throttle)
   applyEngineEffectCoef()
 
   local fuelLps = fuelKgS / math.max(cfg.fuelDensityKgM3, 1) * 1000
@@ -2286,6 +2318,8 @@ local function update(dt)
   setElectricsValue("ure_mbtDeg", mbt)
   setElectricsValue("ure_timingError", timingError)
   setElectricsValue("ure_torqueFactor", torqueFactor)
+  setElectricsValue("ure_appliedTorqueFactor", appliedTorqueFactor or torqueFactor)
+  setElectricsValue("ure_engineEffectLoadBlend", st.engineEffectLoadBlend or 1)
   setElectricsValue("ure_engineEffectTarget", st.engineEffectTarget or 1)
   setElectricsValue("ure_engineEffectApplied", st.lastAppliedEngineEffectFactor or 1)
   setElectricsValue("ure_knockRisk", st.knockRisk)
@@ -2330,7 +2364,7 @@ local function update(dt)
       lastLogT = t
       if cfg.diagnosticLog then
         log("I", "UltraRealismEngine", string.format(
-          "diag parts=%d carb=%s count=%.0f barrels=%.0f native=%d detected=%d src=%d torque=%.3f applied=%.3f flow=%.3f demand=%.2f cfm=%.2f afr=%.2f lambda=%.2f misfire=%.2f stall=%d",
+          "diag parts=%d carb=%s count=%.0f barrels=%.0f native=%d detected=%d src=%d torque=%.3f physics=%.3f blend=%.2f applied=%.3f flow=%.3f demand=%.2f cfm=%.2f afr=%.2f lambda=%.2f misfire=%.2f stall=%d",
           #collectActivePartEntries(),
           st.activeCarbPartName ~= "" and st.activeCarbPartName or "-",
           cfg.carbCount or 0,
@@ -2339,6 +2373,8 @@ local function update(dt)
           st.carbSetupDetected and 1 or 0,
           st.partsDetectionSource or 0,
           torqueFactor,
+          st.appliedTorqueFactor or torqueFactor,
+          st.engineEffectLoadBlend or 1,
           st.lastAppliedEngineEffectFactor or -1,
           inductionFlowRatio,
           st.venturiDemandRatio or 0,
@@ -2526,6 +2562,9 @@ local function init(jbeamData)
   cfg.startMinTorqueFactor = safeNumber(jbeamData.startMinTorqueFactor, 0.94)
   cfg.idleStallGuardMinTorque = safeNumber(jbeamData.idleStallGuardMinTorque, 0.88)
   cfg.idleCircuitFuelMult = safeNumber(jbeamData.idleCircuitFuelMult, 0.12)
+  cfg.loadProportionalEngineEffect = bool(jbeamData.loadProportionalEngineEffect, true)
+  cfg.loadProportionalEngineEffectGain = safeNumber(jbeamData.loadProportionalEngineEffectGain, 1.15)
+  cfg.suppressFalseStallUI = bool(jbeamData.suppressFalseStallUI, true)
   cfg.startFailureSuppression = safeNumber(jbeamData.startFailureSuppression, 0.75)
   cfg.stallDelaySeconds = safeNumber(jbeamData.stallDelaySeconds, 2.5)
   cfg.frictionPenaltyNm = safeNumber(jbeamData.frictionPenaltyNm, 38)
@@ -2565,5 +2604,6 @@ M.reset = reset
 M.onReset = onReset
 M.updateGFX = update
 M.update = updatePhysics
+M.updateWheelsIntermediate = updateWheelsIntermediate
 
 return M

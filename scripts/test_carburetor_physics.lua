@@ -346,6 +346,74 @@ assertGreater(idleHolley.afr, 10.0, "idle accel pump must not flood mixture")
 assertGreater(idleHolley.lambda, 0.68, "idle lambda must stay above rich misfire band")
 assertGreater(idleHolley.torqueFactor, 0.80, "idle stall guard keeps torque above native threshold")
 
+local function runIdleLoadBlendScenario()
+  local activePartName = "ultra_realism_carb_test_1x"
+  local engine = {
+    displacementL = 5.7,
+    idleRPM = 750,
+    maxRPM = 7000,
+    maxTorque = 520,
+    requiredEnergyType = "gasoline",
+    fundamentalFrequencyCylinderCount = 8,
+    throttle = 0.05,
+    requestedThrottle = 0.05,
+    idleThrottle = 0.05,
+    starterEngagedCoef = 0,
+    outputTorqueState = 1,
+    intakeAirDensityCoef = 1,
+    friction = 18,
+    dynamicFriction = 0.02,
+    thermals = {cylinderWallTemperature = 95, oilTemperature = 92, engineBlockTemperature = 90},
+  }
+  electrics = {values = {rpm = 750, throttle = 0, brake = 0, steering_input = 0, wheelspeed = 0}}
+  powertrain = {getDevice = function() return engine end}
+  obj = {getEnvTemperature = function() return 298.15 end, getEnvPressure = function() return 101325 end}
+  log = function() end
+  v = {
+    data = {
+      activeParts = {["engine/topend/carburetor"] = activePartName},
+      activePartsData = {
+        [activePartName] = carbDefinition(1, activePartName),
+      },
+      beams = {},
+    },
+  }
+  partmgmt = {getConfig = function() return {parts = {["engine/topend/carburetor"] = activePartName}} end}
+  local controller = assert(dofile(controllerPath))
+  controller.init({
+    integrationMode = "ceep",
+    autoDetectEngine = true,
+    autoFuelingMode = true,
+    autoTuneVECurve = true,
+    fuelingMode = "auto",
+    enableEngineEffect = true,
+    enableFrictionFallback = false,
+    enableSuspensionBeamEffects = false,
+    climatePreset = "game_environment",
+    useBeamNGEnvironment = true,
+  })
+  for _ = 1, 10 do
+    controller.updateGFX(0.05)
+    controller.update(0.0005)
+  end
+  return {
+    rawTorque = electrics.values.ure_torqueFactor,
+    appliedTorque = electrics.values.ure_appliedTorqueFactor,
+    loadBlend = electrics.values.ure_engineEffectLoadBlend,
+    engineCoef = engine.outputTorqueState,
+  }
+end
+
+local idleBlend = runIdleLoadBlendScenario()
+assertGreater(idleBlend.appliedTorque, 0.94, "idle load blend keeps applied torque near 1")
+assertGreater(idleBlend.loadBlend, 0, "load blend telemetry present")
+assertGreater(1 - idleBlend.loadBlend, 0.55, "idle should keep most of the physics penalty inactive")
+assertGreater(idleBlend.engineCoef, 0.94, "idle engine coef should stay near 1")
+
+local wotBlend = runScenario(1, 6000, 0, 0.4)
+assertGreater(wotBlend.engineCoef, 0.45, "WOT still applies carb restriction")
+assertGreater(math.abs(wotBlend.torqueFactor - wotBlend.engineCoef), 0.0, "WOT torque path active")
+
 print(string.format(
   "Carb physics passed: 1x area %.6f m2 maxFlow %.4f restriction %.3f coef %.3f; 6x area %.6f m2 maxFlow %.4f restriction %.3f coef %.3f",
   single.area,

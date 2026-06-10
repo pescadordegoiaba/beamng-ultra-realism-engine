@@ -68,7 +68,7 @@ def check_lua_markers() -> None:
 def check_version() -> None:
     info = json.loads(INFO.read_text(encoding="utf-8"))
     version = info.get("version", "")
-    if version != "0.14.8":
+    if version != "0.14.9":
         raise SystemExit(f"[FAIL] unexpected version {version}")
     print(f"[OK] version {version}")
 
