@@ -73,8 +73,8 @@ Este projeto é honestamente um **protótipo de pesquisa**, não um substituto d
 
 ### Por que ainda é “infuncional” na prática
 
-1. **Motor nativo com hook condicional (`ultra_combustionEngine`)**  
-   Nos packs CEEP/Ford patchados, cada `mainEngine` usa `ultra_combustionEngine`, que detecta o perfil (`ceep` / `ford`) e delega ao backend correto (`classic_combustionEngine` ou `combustionEngine`). Fora desses packs, o veículo continua com o motor stock. Ainda não é substituição total do powertrain — o hook aplica torque/stall **dentro** do ciclo nativo via bridge Lua.
+1. **Fork completo do motor (`ultra_combustionEngine` v0.15+)**  
+   Packs CEEP/Ford patchados usam `ultra_combustionEngine` → forks `ultra_classic_combustionEngine` / `ultra_stock_combustionEngine` com **torque, combustível (AFR/`spentEnergy`) e stall integrados** no `updateTorque` nativo — não é mais só telemetria por cima do motor vanilla.
 
 2. **Conflito com detecção de stall nativa**  
    O `vehicleController` marca `vehicle.engine.isStalling` quando `outputAV1 < starterMaxAV × 0.8`, independente do flag `stall=0` do nosso `diag`. Reduzir torque para simular restrição de venturi pode fazer o jogo acreditar que o motor morreu, mesmo com mistura saudável.
@@ -135,7 +135,7 @@ UltraRealismEngine|diag parts=... carb=... torque=... afr=... demand=... cfm=...
 
 ## Estrutura de versão
 
-Versão canônica: `UltraRealismEngine_Prototype/mod_info/info.json` (atualmente **0.14.12**).
+Versão canônica: `UltraRealismEngine_Prototype/mod_info/info.json` (atualmente **0.15.0**).
 
 ---
 

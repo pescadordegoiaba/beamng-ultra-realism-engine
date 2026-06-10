@@ -19,7 +19,7 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.14.12"
+local MOD_VERSION = "0.15.0"
 
 local cfg = {}
 local st = {}
@@ -242,11 +242,11 @@ local function resolveAppliedTorqueFactor(performanceFactor, failureFactor, indu
   return finiteNonNegative(blendedPerformance * failureFactor, 1)
 end
 
-local function publishEngineBridge(appliedTorqueFactor, throttle)
+local function publishEngineBridge(appliedTorqueFactor, throttle, fuelKgS, airKgS, lambda, afr, mixEff)
   if not engineBridge or not engineBridge.publishControllerState then return end
   local ultraActive = engine and engine.ureUltraEngine == true
   engineBridge.publishControllerState({
-    active = cfg.enableEngineEffect and ultraActive,
+    active = cfg.enableEngineEffect and (ultraActive or usesNativePartSync()),
     appliedTorqueFactor = appliedTorqueFactor,
     engineEffectTarget = st.engineEffectTarget or 1,
     engineDamageTorqueCoef = st.engineDamageTorqueCoef or 1,
@@ -254,7 +254,18 @@ local function publishEngineBridge(appliedTorqueFactor, throttle)
     severeFailure = math.max(st.vaporLock or 0, st.carbIce or 0, st.misfire or 0),
     effectiveThrottle = throttle,
     integrationMode = getIntegrationMode(),
+    integratedFuel = ultraActive,
+    fuelIntegrationBlend = ultraActive and 1 or 0,
+    fuelKgS = fuelKgS or 0,
+    airKgS = airKgS or 0,
+    lambda = lambda or 1,
+    afr = afr or cfg.stoichAFR,
+    mixtureEfficiency = mixEff or 1,
+    fuelDensityKgM3 = cfg.fuelDensityKgM3,
   })
+  setElectricsValue("ure_integratedFuel", ultraActive and 1 or 0)
+  setElectricsValue("ure_suppressFalseStallUI", cfg.suppressFalseStallUI and 1 or 0)
+  setElectricsValue("ure_fuelDensityKgM3", cfg.fuelDensityKgM3)
 end
 
 local function publishNativeRunningState(physicsRPM, appliedTorqueFactor, throttle)
@@ -2297,7 +2308,7 @@ local function update(dt)
   applyTorqueAndFriction(appliedTorqueFactor)
   publishNativeRunningState(physicsRPM, appliedTorqueFactor, throttle)
   applyEngineEffectCoef()
-  publishEngineBridge(appliedTorqueFactor, throttle)
+  publishEngineBridge(appliedTorqueFactor, throttle, fuelKgS, airKgS, lambda, afr, mixEff)
   clearFalseStallState(physicsRPM, appliedTorqueFactor, throttle)
 
   local fuelLps = fuelKgS / math.max(cfg.fuelDensityKgM3, 1) * 1000

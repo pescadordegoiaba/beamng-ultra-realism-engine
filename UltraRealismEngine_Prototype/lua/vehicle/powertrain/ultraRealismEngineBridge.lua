@@ -15,6 +15,16 @@ local state = {
   effectiveThrottle = 0,
   integrationMode = "generic",
   ultraEngineBound = false,
+  integratedFuel = true,
+  fuelIntegrationBlend = 1,
+  fuelKgS = 0,
+  airKgS = 0,
+  lambda = 1,
+  afr = 14.7,
+  mixtureEfficiency = 1,
+  fuelDensityKgM3 = 740,
+  fuelEnergyJPerKg = 43.5e6,
+  respectNativeDamage = true,
 }
 
 local devices = {}
@@ -50,6 +60,16 @@ function M.publishControllerState(payload)
   state.severeFailure = clamp(payload.severeFailure or 0, 0, 1)
   state.effectiveThrottle = clamp(payload.effectiveThrottle or 0, 0, 1)
   state.integrationMode = tostring(payload.integrationMode or "generic")
+  state.integratedFuel = payload.integratedFuel ~= false
+  state.fuelIntegrationBlend = clamp(payload.fuelIntegrationBlend or 1, 0, 1)
+  state.fuelKgS = clamp(payload.fuelKgS or 0, 0, 10)
+  state.airKgS = clamp(payload.airKgS or 0, 0, 10)
+  state.lambda = clamp(payload.lambda or 1, 0.4, 2.5)
+  state.afr = clamp(payload.afr or 14.7, 4, 35)
+  state.mixtureEfficiency = clamp(payload.mixtureEfficiency or 1, 0.05, 1.5)
+  state.fuelDensityKgM3 = clamp(payload.fuelDensityKgM3 or 740, 400, 900)
+  state.fuelEnergyJPerKg = clamp(payload.fuelEnergyJPerKg or 43.5e6, 20e6, 50e6)
+  state.respectNativeDamage = payload.respectNativeDamage ~= false
 end
 
 function M.getState()
@@ -89,6 +109,13 @@ function M.reset()
   state.effectiveThrottle = 0
   state.integrationMode = "generic"
   state.ultraEngineBound = false
+  state.integratedFuel = true
+  state.fuelIntegrationBlend = 1
+  state.fuelKgS = 0
+  state.airKgS = 0
+  state.lambda = 1
+  state.afr = 14.7
+  state.mixtureEfficiency = 1
   devices = {}
 end
 

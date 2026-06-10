@@ -13,6 +13,9 @@ MOD_DIR = KIT_DIR / "UltraRealismEngine_Prototype"
 LUA = MOD_DIR / "lua" / "vehicle" / "controller" / "ultraRealismEngine.lua"
 ULTRA_ENGINE = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultra_combustionEngine.lua"
 ULTRA_BRIDGE = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultraRealismEngineBridge.lua"
+ULTRA_CLASSIC = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultra_classic_combustionEngine.lua"
+ULTRA_STOCK = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultra_stock_combustionEngine.lua"
+ULTRA_INTEGRATION = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultra_combustionEngineIntegration.lua"
 MATERIALS = MOD_DIR / "vehicles" / "common" / "ultra_realism" / "carburetor_models.materials.json"
 INFO = MOD_DIR / "mod_info" / "info.json"
 ZIP_MAIN = KIT_DIR / "UltraRealismEngine_Prototype.zip"
@@ -34,7 +37,9 @@ def run(cmd: list[str], label: str) -> None:
 
 
 def check_lua_syntax() -> None:
-    for path in (LUA, ULTRA_ENGINE, ULTRA_BRIDGE):
+    for path in (LUA, ULTRA_ENGINE, ULTRA_BRIDGE, ULTRA_INTEGRATION, ULTRA_CLASSIC, ULTRA_STOCK):
+        if not path.exists():
+            raise SystemExit(f"[FAIL] missing {path}")
         run(["luac", "-p", str(path.relative_to(KIT_DIR))], f"Lua syntax {path.name}")
 
 
@@ -73,19 +78,30 @@ def check_lua_markers() -> None:
         "restoreNativeEngineTorqueState",
         "publishEngineBridge",
         "ureUltraEngine",
+        "integratedFuel",
+        "publishEngineBridge",
     ]
     for marker in required:
         if marker not in text:
             raise SystemExit(f"[FAIL] missing Lua marker: {marker}")
     if "for partName, partData in pairs(v.data.activePartsData)" in text:
         raise SystemExit("[FAIL] legacy activePartsData scan still present")
+    integration_text = ULTRA_INTEGRATION.read_text(encoding="utf-8")
+    for marker in ("resolveTorqueCoef", "computeSpentEnergy", "integratedFuel"):
+        if marker not in integration_text:
+            raise SystemExit(f"[FAIL] missing integration marker: {marker}")
+    classic_text = ULTRA_CLASSIC.read_text(encoding="utf-8")
+    if "ureIntegration.resolveTorqueCoef" not in classic_text:
+        raise SystemExit("[FAIL] classic fork missing torque integration")
+    if "ureIntegration.computeSpentEnergy" not in classic_text:
+        raise SystemExit("[FAIL] classic fork missing fuel integration")
     print("[OK] Lua active-part and venturi markers")
 
 
 def check_version() -> None:
     info = json.loads(INFO.read_text(encoding="utf-8"))
     version = info.get("version", "")
-    if version != "0.14.12":
+    if version != "0.15.0":
         raise SystemExit(f"[FAIL] unexpected version {version}")
     print(f"[OK] version {version}")
 
@@ -189,6 +205,9 @@ def main() -> None:
                     "lua/vehicle/controller/ultraRealismEngine.lua",
                     "lua/vehicle/powertrain/ultra_combustionEngine.lua",
                     "lua/vehicle/powertrain/ultraRealismEngineBridge.lua",
+                    "lua/vehicle/powertrain/ultra_combustionEngineIntegration.lua",
+                    "lua/vehicle/powertrain/ultra_classic_combustionEngine.lua",
+                    "lua/vehicle/powertrain/ultra_stock_combustionEngine.lua",
                     "vehicles/common/ultra_realism/carburetor_models.materials.json",
                     "mod_info/info.json",
                 ],

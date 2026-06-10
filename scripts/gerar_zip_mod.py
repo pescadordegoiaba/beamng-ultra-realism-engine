@@ -36,6 +36,10 @@ elif not MODEL_ASSET.exists():
         "Instale o Blender ou gere carburetor_models.dae em outra maquina."
     )
 
+FORK_SCRIPT = KIT_DIR / "scripts" / "fork_combustion_engines.py"
+if FORK_SCRIPT.exists():
+    subprocess.run([sys.executable, str(FORK_SCRIPT)], check=True)
+
 if GENERATOR.exists():
     subprocess.run([sys.executable, str(GENERATOR)], check=True)
 

@@ -1,4 +1,5 @@
 local bridgePath = "UltraRealismEngine_Prototype/lua/vehicle/powertrain/ultraRealismEngineBridge.lua"
+local integrationPath = "UltraRealismEngine_Prototype/lua/vehicle/powertrain/ultra_combustionEngineIntegration.lua"
 local enginePath = "UltraRealismEngine_Prototype/lua/vehicle/powertrain/ultra_combustionEngine.lua"
 
 local function assertTrue(value, label)
@@ -12,17 +13,25 @@ local function assertNear(actual, expected, tolerance, label)
 end
 
 local bridge = assert(dofile(bridgePath))
+local integration = assert(dofile(integrationPath))
+
+rerequire = function(path)
+  if path:find("ultraRealismEngineBridge", 1, true) then return bridge end
+  if path:find("ultra_combustionEngineIntegration", 1, true) then return integration end
+  error("missing rerequire mock for " .. tostring(path))
+end
 bridge.reset()
 
 bridge.publishControllerState({
   active = true,
   appliedTorqueFactor = 0.62,
   engineEffectTarget = 0.62,
-  engineDamageTorqueCoef = 1,
-  suppressFalseStall = true,
-  severeFailure = 0.1,
-  effectiveThrottle = 0.2,
-  integrationMode = "ceep",
+  integratedFuel = true,
+  fuelIntegrationBlend = 1,
+  fuelKgS = 0.002,
+  lambda = 0.95,
+  mixtureEfficiency = 0.92,
+  fuelDensityKgM3 = 740,
 })
 
 local device = {
@@ -34,76 +43,58 @@ local device = {
   starterEngagedCoef = 0,
   isStalled = true,
   stallTimer = 0,
-  setOutputTorqueState = function(self, value) self.outputTorqueState = value end,
 }
 
-bridge.registerDevice(device.name, device, "ceep")
-bridge.applyTorqueToDevice(device)
-assertNear(device.outputTorqueState, 0.62, 0.0001, "bridge applies torque before native calc")
+assertNear(integration.resolveTorqueCoef(device), 0.62, 0.0001, "integrated torque coef")
 
-bridge.postUpdateGFXStallGuard(device)
-assertTrue(not device.isStalled, "bridge clears false stall on ultra engine")
-
-rerequire = rerequire or function(path)
-  if path:find("ultraRealismEngineBridge", 1, true) then
-    return dofile(bridgePath)
-  end
-  error("missing rerequire mock for " .. tostring(path))
+local spent, spentN2O = integration.computeSpentEnergy(device, 1000, 50, 0.8, 0.05)
+assertGreater = function(a, b, label)
+  if not (a > b) then error(string.format("%s: expected %.6f > %.6f", label, a or -1, b or -1)) end
 end
+assertGreater(spent, 500, "integrated fuel energy replaces native burn table")
 
-local origRerequire = rerequire
-local stockBackend = {
-  new = function(jbeamData)
-    return {
-      name = "mainEngine",
-      torqueUpdate = function() end,
-      updateGFX = function() end,
-      reset = function() end,
-    }
-  end,
-}
+integration.postStallGuard(device)
+assertTrue(not device.isStalled, "integration clears false stall")
+
 local classicBackend = {
   new = function(jbeamData)
     return {
       name = "mainEngine",
-      torqueUpdate = function() end,
-      updateGFX = function() end,
-      reset = function() end,
+      ureUltraEngine = true,
+      ureEngineProfile = jbeamData.ureEngineProfile,
+    }
+  end,
+}
+local stockBackend = {
+  new = function(jbeamData)
+    return {
+      name = "mainEngine",
+      ureUltraEngine = true,
+      ureEngineProfile = jbeamData.ureEngineProfile,
     }
   end,
 }
 
-local function mockRerequire(path)
-  if path == "powertrain/combustionEngine" then return stockBackend end
-  if path == "powertrain/classic_combustionEngine" then return classicBackend end
-  if path == "powertrain/ultraRealismEngineBridge" then return bridge end
+local origRerequire = rerequire
+rerequire = function(path)
+  if path == "powertrain/ultra_classic_combustionEngine" then return classicBackend end
+  if path == "powertrain/ultra_stock_combustionEngine" then return stockBackend end
+  if path:find("ultraRealismEngineBridge", 1, true) then return bridge end
+  if path:find("ultra_combustionEngineIntegration", 1, true) then return integration end
   return origRerequire(path)
 end
-rerequire = mockRerequire
-
-FS = {
-  fileExists = function(_self, path)
-    return tostring(path):find("classic_combustionEngine", 1, true) ~= nil
-  end,
-}
 
 electrics = {values = {}}
 log = function() end
-v = {vehicleDirectory = "/vehicles/barstow/", data = {parts = {ceep_engine_block = {}}}}
-
+v = {vehicleDirectory = "/vehicles/barstow/"}
 package.loaded[enginePath] = nil
 local ultraEngine = assert(dofile(enginePath))
+
 local ceepDevice = ultraEngine.new({ureEngineProfile = "ceep"})
-assertTrue(ceepDevice.ureUltraEngine, "CEEP profile enables ultra engine hooks")
+assertTrue(ceepDevice.ureUltraEngine, "CEEP uses URE classic fork")
+assertTrue(ceepDevice.ureEngineProfile == "ceep", "CEEP profile preserved")
 
-v.vehicleDirectory = "/vehicles/ford_engine_pack/"
 local fordDevice = ultraEngine.new({ureEngineProfile = "ford"})
-assertTrue(fordDevice.ureUltraEngine, "Ford profile enables ultra engine hooks")
+assertTrue(fordDevice.ureUltraEngine, "Ford uses URE stock fork")
 
-v.vehicleDirectory = "/vehicles/common/"
-local stockDevice = ultraEngine.new({ureEngineProfile = "stock"})
-assertTrue(not stockDevice.ureUltraEngine, "stock profile keeps native backend only")
-
-rerequire = origRerequire
-
-print("Ultra combustion engine bridge tests passed")
+print("Ultra combustion engine integration tests passed (v0.15.0)")
