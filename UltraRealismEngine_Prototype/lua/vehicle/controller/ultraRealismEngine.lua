@@ -19,7 +19,7 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.14.9"
+local MOD_VERSION = "0.14.10"
 
 local cfg = {}
 local st = {}
@@ -225,14 +225,19 @@ local function applyIdleStallGuard(physicsRPM, torqueFactor, throttle)
 end
 
 -- BeamNG applies powertrain.update() before controller.update() each physics step.
--- Carb restriction is irrelevant at idle (demand~0), so scaling torque there only
--- fights the native idle governor and triggers vehicle.engine.isStalling UI.
-local function resolveAppliedTorqueFactor(rawTorqueFactor, inductionLoad, throttle)
-  if not cfg.loadProportionalEngineEffect then return rawTorqueFactor end
+-- Carb restriction is irrelevant at idle (demand~0), so performance scaling is softened
+-- there. Failure penalties (misfire/vapor/ice) always apply so faults remain noticeable.
+local function resolveAppliedTorqueFactor(performanceFactor, failureFactor, inductionLoad, throttle)
+  performanceFactor = finiteNonNegative(performanceFactor, 1)
+  failureFactor = finiteNonNegative(failureFactor, 1)
+  if not cfg.loadProportionalEngineEffect then
+    return finiteNonNegative(performanceFactor * failureFactor, 1)
+  end
   local demandSignal = math.max(inductionLoad, st.venturiDemandRatio or 0, throttle * 0.30)
   local blend = clamp(demandSignal * cfg.loadProportionalEngineEffectGain, 0, 1)
   st.engineEffectLoadBlend = blend
-  return finiteNonNegative(lerp(1.0, rawTorqueFactor, blend), 1)
+  local blendedPerformance = finiteNonNegative(lerp(1.0, performanceFactor, blend), 1)
+  return finiteNonNegative(blendedPerformance * failureFactor, 1)
 end
 
 local function publishNativeRunningState(physicsRPM, appliedTorqueFactor, throttle)
@@ -398,22 +403,19 @@ local function collectActivePartEntries()
   local entries = {}
   local seen = {}
 
-  local function add(partName, slotName)
-    if not partName or seen[partName] then return end
-    seen[partName] = true
-    local partData = getPartData(partName) or {
-      information = {name = tostring(partName)},
-      slotType = "",
-    }
-    table.insert(entries, {
-      name = partName,
-      data = partData,
-      slot = slotName or "",
-    })
-  end
-
-  for slotName, partName in pairs(getInstalledParts()) do
-    add(partName, slotName)
+  for slotKey, partName in pairs(getInstalledParts()) do
+    if partName and not seen[slotKey] then
+      seen[slotKey] = true
+      local partData = getPartData(partName) or {
+        information = {name = tostring(partName)},
+        slotType = "",
+      }
+      table.insert(entries, {
+        name = partName,
+        data = partData,
+        slot = slotKey,
+      })
+    end
   end
 
   return entries
@@ -1867,14 +1869,14 @@ local function markEngineDamage(kind)
 
   if kind == "rings" and not st.ringsDamaged then
     st.ringsDamaged = true
+    st.engineDamageTorqueCoef = finiteNonNegative((st.engineDamageTorqueCoef or 1) * 0.82, 1)
     pcall(function() if engine.thermals then engine.thermals.pistonRingsDamaged = true end end)
     pcall(function() if damageTracker then damageTracker.setDamage("engine", "pistonRingsDamaged", true, true) end end)
-    pcall(function() if engine.scaleOutputTorque then engine:scaleOutputTorque(0.82, 0.2) end end)
   elseif kind == "head" and not st.headGasketDamaged then
     st.headGasketDamaged = true
+    st.engineDamageTorqueCoef = finiteNonNegative((st.engineDamageTorqueCoef or 1) * 0.78, 1)
     pcall(function() if engine.thermals then engine.thermals.headGasketBlown = true end end)
     pcall(function() if damageTracker then damageTracker.setDamage("engine", "headGasketDamaged", true, true) end end)
-    pcall(function() if engine.scaleOutputTorque then engine:scaleOutputTorque(0.78, 0.2) end end)
   elseif kind == "bearings" and not st.rodBearingDamaged then
     st.rodBearingDamaged = true
     pcall(function() if engine.thermals then engine.thermals.connectingRodBearingsDamaged = true end end)
@@ -1996,7 +1998,7 @@ local function applyEngineEffectCoef()
   if not engine then engine = getMainEngine() end
   if not engine or not cfg.enableEngineEffect then return end
 
-  local target = finiteNonNegative(st.engineEffectTarget, 1)
+  local target = finiteNonNegative(st.engineEffectTarget, 1) * finiteNonNegative(st.engineDamageTorqueCoef or 1, 1)
   -- BeamNG developers recommend outputTorqueState for real torque scaling.
   -- Apply on both GFX and physics steps because the native engine may reset it.
   if engine.outputTorqueState ~= nil then
@@ -2017,6 +2019,13 @@ local function updatePhysics()
   -- Re-apply every physics substep so the next powertrain.update() sees the latest factor.
   -- Native order is powertrain.update -> controller.update, so this always leads by one substep.
   applyEngineEffectCoef()
+  if not engine then engine = getMainEngine() end
+  if engine then
+    local physicsRPM = getEnginePhysicsRPM()
+    local driverThrottle = clamp(getElectricsValue("throttle", getElectricsValue("throttle_input", 0)), 0, 1)
+    local throttle = getEffectiveThrottle(driverThrottle)
+    clearFalseStallState(physicsRPM, st.appliedTorqueFactor or st.engineEffectTarget or 1, throttle)
+  end
 end
 
 local function updateWheelsIntermediate(_dt)
@@ -2179,22 +2188,26 @@ local function update(dt)
   end
   local climateShockLoss = 1 - st.climateShock * 0.16
 
-  local rawTorqueFactor = densityEff * mixEff * timingEff * pistonEff * compressionEff * valveTrainEff
-    * inductionTorqueEff * iceLoss * vaporLoss * misfireLoss * climateShockLoss
+  -- Native combustionEngine already multiplies torque by intakeAirDensityCoef; keep density telemetry only.
+  local performanceFactor = mixEff * timingEff * pistonEff * compressionEff * valveTrainEff
+    * inductionTorqueEff * climateShockLoss
+  local failureFactor = iceLoss * vaporLoss * misfireLoss
+  local rawTorqueFactor = performanceFactor * failureFactor
   local torqueFactor = finiteNonNegative(rawTorqueFactor, 1)
   local startProtection = getStarterProtection(rpm)
   local severeFailure = math.max(st.vaporLock, st.carbIce, st.misfire)
   local protectedMin = cfg.startMinTorqueFactor * startProtection
   protectedMin = lerp(protectedMin, 0, clamp((severeFailure - 0.78) / 0.22, 0, 1))
-  torqueFactor = math.max(torqueFactor, protectedMin)
-  torqueFactor = applyIdleStallGuard(physicsRPM, torqueFactor, throttle)
-  local appliedTorqueFactor = resolveAppliedTorqueFactor(torqueFactor, inductionLoad, throttle)
+  performanceFactor = math.max(performanceFactor, protectedMin)
+  rawTorqueFactor = performanceFactor * failureFactor
+  torqueFactor = finiteNonNegative(rawTorqueFactor, 1)
+  local appliedTorqueFactor = resolveAppliedTorqueFactor(performanceFactor, failureFactor, inductionLoad, throttle)
+  appliedTorqueFactor = applyIdleStallGuard(physicsRPM, appliedTorqueFactor, throttle)
   st.appliedTorqueFactor = appliedTorqueFactor
 
   updateThermalAndFailures(dt, rpm, throttle, tempC, pressurePa, humidity, lambda, advanceRisk, startProtection)
   updateSuspensionModel(dt, driverThrottle, brake, steering, speed)
   applyTorqueAndFriction(appliedTorqueFactor)
-  clearFalseStallState(physicsRPM, appliedTorqueFactor, throttle)
   publishNativeRunningState(physicsRPM, appliedTorqueFactor, throttle)
   applyEngineEffectCoef()
 
@@ -2317,6 +2330,9 @@ local function update(dt)
   setElectricsValue("ure_timingDeg", userTiming)
   setElectricsValue("ure_mbtDeg", mbt)
   setElectricsValue("ure_timingError", timingError)
+  setElectricsValue("ure_performanceTorqueFactor", performanceFactor)
+  setElectricsValue("ure_failureTorqueFactor", failureFactor)
+  setElectricsValue("ure_engineDamageTorqueCoef", st.engineDamageTorqueCoef or 1)
   setElectricsValue("ure_torqueFactor", torqueFactor)
   setElectricsValue("ure_appliedTorqueFactor", appliedTorqueFactor or torqueFactor)
   setElectricsValue("ure_engineEffectLoadBlend", st.engineEffectLoadBlend or 1)
@@ -2433,6 +2449,7 @@ local function reset()
     pitchLoadTransfer = 0,
     baselineCaptured = false,
     engineEffectTarget = 1,
+    engineDamageTorqueCoef = 1,
     lastAppliedEngineEffectFactor = 1,
     runTime = 0,
     severeFailureTimer = 0,

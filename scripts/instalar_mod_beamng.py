@@ -80,8 +80,12 @@ def main() -> None:
     args = ap.parse_args()
 
     zips = [path.expanduser().resolve() for path in (args.zip or [DEFAULT_ZIP])]
-    if args.with_packs:
+    include_packs = args.with_packs or (
+        not args.zip and all(path.exists() for path in DEFAULT_PACKS)
+    )
+    if include_packs:
         zips.extend(path for path in DEFAULT_PACKS if path.exists())
+    zips = list(dict.fromkeys(zips))
 
     missing = [path for path in zips if not path.exists()]
     if missing:

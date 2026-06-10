@@ -14,8 +14,8 @@ Esta pasta guarda **ZIPs patchados** gerados por `scripts/integrar_packs_motores
 ```bash
 cd beamng_super_realism_modkit
 python3 scripts/integrar_packs_motores.py \
-  --ceep-zip /caminho/para/classic_engine_expansion_pack.zip \
-  --ford-zip /caminho/para/Ford_Engine_Pack_JITTERUSA.zip
+  --ceep /caminho/para/classic_engine_expansion_pack.zip \
+  --ford /caminho/para/Ford_Engine_Pack_JITTERUSA.zip
 ```
 
 Saída esperada:

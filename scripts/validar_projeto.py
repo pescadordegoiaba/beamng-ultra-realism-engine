@@ -56,6 +56,9 @@ def check_lua_markers() -> None:
         "calcMaxVenturiCapacity",
         "ure_maxVenturiFlowM3s",
         "ure_venturiDemandRatio",
+        "engineDamageTorqueCoef",
+        "ure_failureTorqueFactor",
+        "ure_performanceTorqueFactor",
     ]
     for marker in required:
         if marker not in text:
@@ -68,7 +71,7 @@ def check_lua_markers() -> None:
 def check_version() -> None:
     info = json.loads(INFO.read_text(encoding="utf-8"))
     version = info.get("version", "")
-    if version != "0.14.9":
+    if version != "0.14.10":
         raise SystemExit(f"[FAIL] unexpected version {version}")
     print(f"[OK] version {version}")
 
@@ -85,6 +88,25 @@ def check_zip(path: Path, required: list[str]) -> None:
             if item not in names:
                 raise SystemExit(f"[FAIL] {path.name} missing {item}")
     print(f"[OK] zip {path.name}")
+
+
+def check_pack_integration(path: Path, expected_mode: str) -> None:
+    controller_hits = 0
+    with zipfile.ZipFile(path) as zf:
+        for name in zf.namelist():
+            if not name.lower().endswith(".jbeam"):
+                continue
+            text = zf.read(name).decode("utf-8", errors="replace")
+            if '"ultraRealismEngine"' not in text:
+                continue
+            controller_hits += 1
+            if f'"integrationMode":"{expected_mode}"' not in text.replace(" ", ""):
+                raise SystemExit(
+                    f"[FAIL] {path.name} controller in {name} missing integrationMode {expected_mode}"
+                )
+    if controller_hits == 0:
+        raise SystemExit(f"[FAIL] {path.name} has no ultraRealismEngine controller hooks")
+    print(f"[OK] {path.name} integrationMode={expected_mode} in {controller_hits} engine(s)")
 
 
 def pack_materials_need_patch(path: Path) -> bool:
@@ -145,12 +167,14 @@ def main() -> None:
             for pack in (ZIP_CEEP, ZIP_FORD):
                 if pack.exists():
                     patch_materials_in_zip(pack)
-        for pack in (ZIP_CEEP, ZIP_FORD):
+        for pack, mode in ((ZIP_CEEP, "ceep"), (ZIP_FORD, "ford")):
             if pack.exists():
                 check_zip(
                     pack,
                     ["vehicles/common/ultra_realism/carburetor_models.materials.json"],
                 )
+                if index == 1:
+                    check_pack_integration(pack, mode)
     print(f"\n[OK] Completed {passes} validation passes")
 
 

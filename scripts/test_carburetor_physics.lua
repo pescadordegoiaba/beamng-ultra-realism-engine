@@ -141,6 +141,7 @@ local function runScenario(count, rpm, starterEngaged, duration, activePartName)
     applied = electrics.values.ure_engineEffectApplied,
     startProtection = electrics.values.ure_startProtection,
     carbCount = electrics.values.ure_carbCount,
+    loadBlend = electrics.values.ure_engineEffectLoadBlend,
   }
 end
 
@@ -412,7 +413,8 @@ assertGreater(idleBlend.engineCoef, 0.94, "idle engine coef should stay near 1")
 
 local wotBlend = runScenario(1, 6000, 0, 0.4)
 assertGreater(wotBlend.engineCoef, 0.45, "WOT still applies carb restriction")
-assertGreater(math.abs(wotBlend.torqueFactor - wotBlend.engineCoef), 0.0, "WOT torque path active")
+assertNear(wotBlend.engineCoef, wotBlend.torqueFactor, 0.000001, "WOT applied torque matches physics factor")
+assertGreater(wotBlend.loadBlend, 0.85, "WOT load blend fully active")
 
 print(string.format(
   "Carb physics passed: 1x area %.6f m2 maxFlow %.4f restriction %.3f coef %.3f; 6x area %.6f m2 maxFlow %.4f restriction %.3f coef %.3f",
