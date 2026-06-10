@@ -135,7 +135,7 @@ UltraRealismEngine|diag parts=... carb=... torque=... afr=... demand=... cfm=...
 
 ## Estrutura de versão
 
-Versão canônica: `UltraRealismEngine_Prototype/mod_info/info.json` (atualmente **0.15.2**).
+Versão canônica: `UltraRealismEngine_Prototype/mod_info/info.json` (atualmente **0.15.3**).
 
 ---
 

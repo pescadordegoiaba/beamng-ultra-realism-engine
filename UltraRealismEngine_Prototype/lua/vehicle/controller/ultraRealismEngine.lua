@@ -19,7 +19,7 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.15.2"
+local MOD_VERSION = "0.15.3"
 
 local cfg = {}
 local st = {}
@@ -233,13 +233,22 @@ end
 -- BeamNG applies powertrain.update() before controller.update() each physics step.
 -- Carb restriction is irrelevant at idle (demand~0), so performance scaling is softened
 -- there. Failure penalties (misfire/vapor/ice) always apply so faults remain noticeable.
-local function resolveAppliedTorqueFactor(performanceFactor, failureFactor, inductionLoad, throttle)
+local function resolveAppliedTorqueFactor(performanceFactor, failureFactor, inductionLoad, throttle, inductionFlowRatio)
   performanceFactor = finiteNonNegative(performanceFactor, 1)
   failureFactor = finiteNonNegative(failureFactor, 1)
   if not cfg.loadProportionalEngineEffect then
     return finiteNonNegative(performanceFactor * failureFactor, 1)
   end
-  local demandSignal = math.max(inductionLoad, st.venturiDemandRatio or 0, throttle * 0.30)
+  local flowDeficit = 1 - clamp(inductionFlowRatio or 1, 0, 1)
+  local rpm = getElectricsValue("rpm", getElectricsValue("engineRPM", cfg.idleRPM))
+  local rpmLoad = clamp(rpm / math.max(cfg.redlineRPM, cfg.idleRPM + 200), 0, 1.15)
+  local demandSignal = math.max(
+    inductionLoad,
+    flowDeficit,
+    st.venturiDemandRatio or 0,
+    throttle * 0.42,
+    rpmLoad * throttle * 0.72
+  )
   local blend = clamp(demandSignal * cfg.loadProportionalEngineEffectGain, 0, 1)
   st.engineEffectLoadBlend = blend
   local blendedPerformance = finiteNonNegative(lerp(1.0, performanceFactor, blend), 1)
@@ -921,10 +930,17 @@ local function inferCarbGeometry(text, dispL, totalBarrels)
     model = "Weber 32/36 DGV equivalent"
     modelId = 3236
   end
-  if containsAny(text, {"40 dcoe", "40dcoe", "dcoe40", "1bblx6", "6x1bbl", "six 1-barrel", "quadcarb", "quad-carb", "quad carb", "2bblx4", "4x2bbl", "4x 2bbl", "quad 2-barrel", "quad 2 barrel"}) then
+  if containsAny(text, {
+    "40 dcoe", "40dcoe", "dcoe40", "40_dcoe", "dcoe_40", "_dcoe_",
+    "1bblx6", "6x1bbl", "six 1-barrel", "six_weber", "quadcarb", "quad-carb", "quad carb",
+    "2bblx4", "4x2bbl", "4x 2bbl", "quad 2-barrel", "quad 2 barrel",
+  }) then
     bore = 40
     venturi = 30
-    jet = 1.15
+    if containsAny(text, {"_28", "28mm", "venturi 28", "venturi-28"}) then venturi = 28 end
+    if containsAny(text, {"_30", "30mm", "venturi 30", "venturi-30"}) then venturi = 30 end
+    if containsAny(text, {"_32", "32mm", "venturi 32", "venturi-32"}) then venturi = 32 end
+    jet = clamp(venturi / 24.5, 0.95, 1.35)
     model = "Weber 40 DCOE equivalent"
     modelId = 40
   end
@@ -1665,8 +1681,13 @@ local function applyCarbAirRestriction(airM3s, airKgS, rhoAir, throttle, pressur
   end
 
   local ratedFlowM3s = math.max(cfg.carbRatedCFM or 0, 0) * 0.00047194745
-  local cfmLoad = ratedFlowM3s > 0 and (airM3s / ratedFlowM3s) or 0
+  local effectiveRatedM3s = ratedFlowM3s * clamp(cfg.carbFlowCalibrationCoef or 0.82, 0.55, 1.15)
+  local cfmLoad = effectiveRatedM3s > 0 and (airM3s / effectiveRatedM3s) or 0
   local cfmRatio = 1
+  local rpm = getElectricsValue("rpm", getElectricsValue("engineRPM", cfg.idleRPM))
+  local _, _, engineDemandM3s = calcEngineAirMassFlow(rpm, throttle, rhoAir, tempC)
+  local sizingRatio = engineDemandM3s / math.max(effectiveRatedM3s, 1e-9)
+  st.carbSizingRatio = sizingRatio
   if ratedFlowM3s > 0 then
     local cfmPressureDrop = (cfg.carbRatingPressureDropPa or 5079) * cfmLoad * cfmLoad
     local cfmManifoldPressure = math.max(pressurePa - cfmPressureDrop, 1000)
@@ -1675,16 +1696,32 @@ local function applyCarbAirRestriction(airM3s, airKgS, rhoAir, throttle, pressur
       pressureRatio = manifoldPressure / math.max(pressurePa, 1)
       pressureDrop = pressurePa - manifoldPressure
     end
+    local function applyDemandRatioPenalty(loadRatio)
+      if loadRatio > 1 then
+        return 1 / (loadRatio * loadRatio)
+      end
+      local startRatio = cfg.carbPartialRestrictionStart or 0.55
+      if loadRatio > startRatio then
+        local span = math.max(1 - startRatio, 0.05)
+        local t = clamp((loadRatio - startRatio) / span, 0, 1)
+        return lerp(1, 1 / (loadRatio * loadRatio), t * t)
+      end
+      return 1
+    end
     if venturiDemandRatio > 1 then
       cfmRatio = math.min(cfmRatio, geometricChokeRatio)
-    elseif cfmLoad > 1 then
-      cfmRatio = 1 / (cfmLoad * cfmLoad)
     end
+    cfmRatio = math.min(cfmRatio, applyDemandRatioPenalty(math.max(cfmLoad, sizingRatio)))
   elseif venturiDemandRatio > 1 then
     cfmRatio = geometricChokeRatio
   end
 
   local factor = math.min(pressureRatio, cfmRatio, geometricChokeRatio)
+  if ratedFlowM3s > 0 and sizingRatio < 0.42 and (cfg.carbCount or 1) >= 2 then
+    local bonus = clamp(cfg.multiCarbFlowBonus or 1.06, 1, 1.12)
+    local bonusBlend = clamp((0.42 - sizingRatio) / 0.30, 0, 1)
+    factor = factor * lerp(1, bonus, bonusBlend)
+  end
   local deliveredAirM3s = math.min(airM3s * factor, maxVenturiFlowM3s)
   local deliveryRatio = deliveredAirM3s / math.max(airM3s, 1e-9)
   factor = deliveryRatio
@@ -2312,7 +2349,7 @@ local function update(dt)
   performanceFactor = math.max(performanceFactor, protectedMin)
   rawTorqueFactor = performanceFactor * failureFactor
   torqueFactor = finiteNonNegative(rawTorqueFactor, 1)
-  local appliedTorqueFactor = resolveAppliedTorqueFactor(performanceFactor, failureFactor, inductionLoad, throttle)
+  local appliedTorqueFactor = resolveAppliedTorqueFactor(performanceFactor, failureFactor, inductionLoad, throttle, inductionFlowRatio)
   appliedTorqueFactor = applyIdleStallGuard(physicsRPM, appliedTorqueFactor, throttle)
   st.appliedTorqueFactor = appliedTorqueFactor
 
@@ -2762,7 +2799,10 @@ local function init(jbeamData)
   cfg.idleStallGuardMinTorque = safeNumber(jbeamData.idleStallGuardMinTorque, 0.88)
   cfg.idleCircuitFuelMult = safeNumber(jbeamData.idleCircuitFuelMult, 0.12)
   cfg.loadProportionalEngineEffect = bool(jbeamData.loadProportionalEngineEffect, true)
-  cfg.loadProportionalEngineEffectGain = safeNumber(jbeamData.loadProportionalEngineEffectGain, 1.15)
+  cfg.loadProportionalEngineEffectGain = safeNumber(jbeamData.loadProportionalEngineEffectGain, 1.35)
+  cfg.carbPartialRestrictionStart = safeNumber(jbeamData.carbPartialRestrictionStart, 0.55)
+  cfg.carbFlowCalibrationCoef = safeNumber(jbeamData.carbFlowCalibrationCoef, 0.82)
+  cfg.multiCarbFlowBonus = safeNumber(jbeamData.multiCarbFlowBonus, 1.06)
   cfg.suppressFalseStallUI = bool(jbeamData.suppressFalseStallUI, true)
   cfg.startFailureSuppression = safeNumber(jbeamData.startFailureSuppression, 0.75)
   cfg.stallDelaySeconds = safeNumber(jbeamData.stallDelaySeconds, 2.5)

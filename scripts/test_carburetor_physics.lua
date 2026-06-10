@@ -412,9 +412,112 @@ assertGreater(1 - idleBlend.loadBlend, 0.55, "idle should keep most of the physi
 assertGreater(idleBlend.engineCoef, 0.94, "idle engine coef should stay near 1")
 
 local wotBlend = runScenario(1, 6000, 0, 0.4)
-assertGreater(wotBlend.engineCoef, 0.45, "WOT still applies carb restriction")
+assertGreater(wotBlend.engineCoef, 0.20, "WOT still applies carb restriction")
 assertNear(wotBlend.engineCoef, wotBlend.torqueFactor, 0.000001, "WOT applied torque matches physics factor")
 assertGreater(wotBlend.loadBlend, 0.85, "WOT load blend fully active")
+
+local topGearRpmSingle = runScenario(1, 4500, 0, 0.4)
+local topGearRpmSix = runScenario(6, 4500, 0, 0.4)
+assertGreater(topGearRpmSix.engineCoef - topGearRpmSingle.engineCoef, 0.12, "top-gear RPM torque gap")
+
+local function runNativePartNameScenario(count, partName, rpm)
+  package.loaded[controllerPath] = nil
+  local carbPartData = carbDefinition(count, partName)
+  carbPartData.information.name = partName
+  carbPartData.slotType = "ultra_realism_carburetor"
+  local engine = {
+    displacementL = 4.38,
+    idleRPM = 1350,
+    maxRPM = 6050,
+    maxTorque = 520,
+    requiredEnergyType = "gasoline",
+    fundamentalFrequencyCylinderCount = 8,
+    throttle = 1,
+    requestedThrottle = 1,
+    idleThrottle = 0.05,
+    starterEngagedCoef = 0,
+    outputTorqueState = 1,
+    intakeAirDensityCoef = 1,
+    friction = 18,
+    dynamicFriction = 0.02,
+    thermals = {cylinderWallTemperature = 95, oilTemperature = 92, engineBlockTemperature = 90},
+  }
+  electrics = {values = {rpm = rpm, throttle = 1, brake = 0, steering_input = 0, wheelspeed = 45}}
+  powertrain = {getDevice = function() return engine end}
+  obj = {getEnvTemperature = function() return 298.15 end, getEnvPressure = function() return 101325 end}
+  log = function() end
+  beamstate = nil
+  damageTracker = nil
+  v = {
+    config = {
+      parts = {["engine/topend/carburetor"] = partName},
+      partsTree = {
+        chosenPartName = "engine",
+        children = {
+          topend = {
+            chosenPartName = "topend",
+            children = {
+              carburetor = {
+                chosenPartName = partName,
+                slotName = "carburetor",
+                partPath = "/engine/topend/carburetor",
+              },
+            },
+          },
+        },
+      },
+    },
+    data = {
+      activeParts = {["engine/topend/carburetor"] = partName},
+      activePartsData = {[partName] = carbPartData},
+      beams = {},
+    },
+  }
+  partmgmt = {
+    getConfig = function()
+      return {
+        parts = {["engine/topend/carburetor"] = partName},
+        partsTree = v.config.partsTree,
+      }
+    end,
+  }
+  local controller = assert(dofile(controllerPath))
+  controller.init({
+    integrationMode = "ceep",
+    autoDetectEngine = true,
+    autoFuelingMode = true,
+    autoTuneVECurve = true,
+    fuelingMode = "auto",
+    enableEngineEffect = true,
+    enableFrictionFallback = false,
+    enableSuspensionBeamEffects = false,
+    climatePreset = "game_environment",
+    useBeamNGEnvironment = true,
+    displacementL = 4.38,
+    idleRPM = 1350,
+    redlineRPM = 6050,
+  })
+  for _ = 1, 8 do
+    controller.updateGFX(0.05)
+    controller.update(0.0005)
+  end
+  return {
+    carbCount = electrics.values.ure_carbCount,
+    venturiMM = electrics.values.ure_carbPrimaryVenturiMM,
+    engineCoef = engine.outputTorqueState,
+    loadBlend = electrics.values.ure_engineEffectLoadBlend,
+  }
+end
+
+local nativeSingle = runNativePartNameScenario(1, "ultra_realism_carb_weber_40_dcoe_28", 6000)
+local nativeSix = runNativePartNameScenario(
+  6,
+  "ultra_realism_native_ceep_eb707dbe32_carb_six_weber_40_dcoe_32",
+  6000
+)
+assertNear(nativeSingle.carbCount, 1, 0.001, "native single carb count")
+assertNear(nativeSix.carbCount, 6, 0.001, "native six carb count")
+assertGreater(nativeSix.engineCoef - nativeSingle.engineCoef, 0.12, "native CEEP-style torque gap")
 
 print(string.format(
   "Carb physics passed: 1x area %.6f m2 maxFlow %.4f restriction %.3f coef %.3f; 6x area %.6f m2 maxFlow %.4f restriction %.3f coef %.3f",
