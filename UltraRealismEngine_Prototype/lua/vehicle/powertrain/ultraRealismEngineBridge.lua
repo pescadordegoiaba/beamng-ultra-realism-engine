@@ -25,6 +25,11 @@ local state = {
   fuelDensityKgM3 = 740,
   fuelEnergyJPerKg = 43.5e6,
   respectNativeDamage = true,
+  runtimeTorqueMult = 1,
+  inductionFlowRatio = 1,
+  manifoldPressurePa = 101325,
+  forcedInductionBlend = 0,
+  nativePartSyncActive = false,
 }
 
 local devices = {}
@@ -70,6 +75,11 @@ function M.publishControllerState(payload)
   state.fuelDensityKgM3 = clamp(payload.fuelDensityKgM3 or 740, 400, 900)
   state.fuelEnergyJPerKg = clamp(payload.fuelEnergyJPerKg or 43.5e6, 20e6, 50e6)
   state.respectNativeDamage = payload.respectNativeDamage ~= false
+  state.runtimeTorqueMult = clamp(payload.runtimeTorqueMult or 1, 0.5, 1.5)
+  state.inductionFlowRatio = clamp(payload.inductionFlowRatio or 1, 0.2, 1.5)
+  state.manifoldPressurePa = clamp(payload.manifoldPressurePa or 101325, 20000, 400000)
+  state.forcedInductionBlend = clamp(payload.forcedInductionBlend or 0, 0, 1)
+  state.nativePartSyncActive = payload.nativePartSyncActive == true
 end
 
 function M.getState()
@@ -116,6 +126,11 @@ function M.reset()
   state.lambda = 1
   state.afr = 14.7
   state.mixtureEfficiency = 1
+  state.runtimeTorqueMult = 1
+  state.inductionFlowRatio = 1
+  state.manifoldPressurePa = 101325
+  state.forcedInductionBlend = 0
+  state.nativePartSyncActive = false
   devices = {}
 end
 

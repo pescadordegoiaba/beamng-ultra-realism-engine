@@ -7,6 +7,14 @@ local M = {}
 
 local DEFAULT_FUEL_ENERGY_J_PER_KG = 43.5e6
 local cachedBridge
+local cachedHooks
+
+local function getHooks()
+  if cachedHooks then return cachedHooks end
+  local ok, hooks = pcall(rerequire, "powertrain/ultra_combustionEngineHooks")
+  cachedHooks = ok and hooks or nil
+  return cachedHooks
+end
 
 local function getBridge()
   if cachedBridge then return cachedBridge end
@@ -54,6 +62,38 @@ local function getIntegratedState()
   }
 end
 
+local function lerp(a, b, t)
+  return a + (b - a) * clamp(t, 0, 1)
+end
+
+function M.resolveRuntimeTorqueMult(device)
+  if not device or not device.ureUltraEngine then return 1 end
+  local state = getIntegratedState()
+  if not state.active then return 1 end
+  if state.nativePartSyncActive and (state.runtimeTorqueMult or 1) > 0.995 and (state.runtimeTorqueMult or 1) < 1.005 then
+    return 1
+  end
+  return clamp(state.runtimeTorqueMult or 1, 0.5, 1.5)
+end
+
+function M.resolveForcedInductionCoef(device)
+  if not device then return 1 end
+  local nativeCoef = clamp(device.forcedInductionCoef or 1, 0.1, 4)
+  if not device.ureUltraEngine then return nativeCoef end
+
+  local state = getIntegratedState()
+  if not state.active then return nativeCoef end
+
+  local blend = clamp(state.forcedInductionBlend or 0, 0, 1)
+  if blend <= 1e-6 then return nativeCoef end
+
+  local flowRatio = clamp(state.inductionFlowRatio or 1, 0.2, 1.5)
+  local manifoldPa = clamp(state.manifoldPressurePa or 101325, 20000, 400000)
+  local boostFromManifold = clamp(manifoldPa / 101325, 0.5, 2.5)
+  local blendedFlow = flowRatio * lerp(1, boostFromManifold, clamp(blend * 0.65, 0, 1))
+  return nativeCoef * lerp(1, blendedFlow, blend)
+end
+
 function M.resolveTorqueCoef(device)
   if not device or not device.ureUltraEngine then
     return device and device.outputTorqueState or 1
@@ -66,6 +106,7 @@ function M.resolveTorqueCoef(device)
 
   local ureCoef = clamp(state.appliedTorqueFactor or 1, 0, 2)
     * clamp(state.engineDamageTorqueCoef or 1, 0, 2)
+    * M.resolveRuntimeTorqueMult(device)
   local nativeCoef = clamp(device.outputTorqueState or 1, 0, 2)
 
   if nativeCoef < 0.55 and (state.respectNativeDamage ~= false) then

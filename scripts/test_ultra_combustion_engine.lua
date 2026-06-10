@@ -138,4 +138,12 @@ bridge.publishControllerState({
 })
 assertNear(integration.resolveTorqueCoef(device), 0.44, 0.0001, "bridge refresh updates torque coef")
 
-print("Ultra combustion engine integration tests passed (v0.17.2)")
+assert(integration.resolveForcedInductionCoef, "missing resolveForcedInductionCoef")
+assert(integration.resolveRuntimeTorqueMult, "missing resolveRuntimeTorqueMult")
+local fiCoef = integration.resolveForcedInductionCoef({
+  ureUltraEngine = true,
+  forcedInductionCoef = 1.3,
+})
+assertNear(fiCoef, 1.3, 0.0001, "FI coef passthrough")
+
+print("Ultra combustion engine integration tests passed (v0.21.0)")

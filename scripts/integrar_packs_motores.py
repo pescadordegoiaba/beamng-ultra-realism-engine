@@ -139,6 +139,11 @@ FORD_NATIVE_CATEGORY_LABELS = {
     "ultra_realism_rotating_response": {"flywheel"},
     "ultra_realism_oil_system": {"oil pan"},
     "ultra_realism_intake_geometry": FORD_INTAKE_GEOMETRY_LABELS,
+    "ultra_realism_short_block": {"short block", "engine block"},
+    "ultra_realism_camshaft": {"camshaft"},
+    "ultra_realism_valvetrain": {"valvetrain"},
+    "ultra_realism_cylinder_heads": {"cylinder head", "cylinder heads"},
+    "ultra_realism_ignition": {"ignition", "distributor"},
 }
 FORD_CARB_INTAKE_KEYWORDS = (
     "carburetor",
@@ -1367,6 +1372,15 @@ def patch_ceep_hierarchy(text: str, inventory: dict) -> tuple[str, dict[str, int
     )
     stats["carbOwners"] = parts
     stats["carbRows"] = rows
+    text, parts, rows = patch_matching_parts(
+        text,
+        lambda _key, block: (
+            "engine" in slot_type(block).lower() and "diesel" in block.lower()
+        ),
+        [DIESEL_INJECTION_SLOT],
+    )
+    stats["dieselInjectionOwners"] = parts
+    stats["dieselInjectionRows"] = rows
     return text, stats
 
 
@@ -1458,6 +1472,15 @@ def patch_ford_hierarchy(
             tb_rows += added
     stats["throttleBodyIntakeOwners"] = tb_parts
     stats["throttleBodyIntakeRows"] = tb_rows
+    text, diesel_parts, diesel_rows = patch_matching_parts(
+        text,
+        lambda _key, block: (
+            "engine_variant" in slot_type(block).lower() and "diesel" in block.lower()
+        ),
+        [DIESEL_INJECTION_SLOT],
+    )
+    stats["dieselInjectionOwners"] = diesel_parts
+    stats["dieselInjectionRows"] = diesel_rows
     return text, stats
 
 

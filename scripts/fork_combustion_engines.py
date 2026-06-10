@@ -2,6 +2,7 @@
 """Gera forks URE de classic_combustionEngine e combustionEngine com combustível integrado."""
 from __future__ import annotations
 
+import os
 import re
 import zipfile
 from pathlib import Path
@@ -9,7 +10,10 @@ from pathlib import Path
 KIT_DIR = Path(__file__).resolve().parent.parent
 OUT_DIR = KIT_DIR / "UltraRealismEngine_Prototype" / "lua" / "vehicle" / "powertrain"
 CEEP_ZIP = KIT_DIR / "patched_mods" / "classic_engine_expansion_pack.zip"
-STOCK_SRC = Path("/home/gullin/Games/BeamNG.drive/lua/vehicle/powertrain/combustionEngine.lua")
+BEAMNG_ROOT = Path(
+    os.environ.get("BEAMNG_ROOT", "/home/gullin/Games/BeamNG.drive")
+).expanduser()
+STOCK_SRC = BEAMNG_ROOT / "lua" / "vehicle" / "powertrain" / "combustionEngine.lua"
 
 URE_HEADER = """-- Ultra Realism Engine fork. Combustion + fuel model integrated via ultra_combustionEngineIntegration.
 -- Derived from BeamNG.drive / CEEP combustion engine (bCDDL). Do not replace with vanilla at runtime.
@@ -23,7 +27,8 @@ TORQUE_OLD = (
 )
 TORQUE_NEW = (
     "  local ureTorqueCoef = ureIntegration.resolveTorqueCoef(device)\n"
-    "  torque = ((torque * device.forcedInductionCoef * throttleMap) + device.nitrousOxideTorque) "
+    "  local ureForcedCoef = ureIntegration.resolveForcedInductionCoef(device)\n"
+    "  torque = ((torque * ureForcedCoef * throttleMap) + device.nitrousOxideTorque) "
     "* ureTorqueCoef * (ignitionCut and 0 or 1) * device.slowIgnitionErrorCoef * device.fastIgnitionErrorCoef"
 )
 

@@ -19,7 +19,7 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.17.2"
+local MOD_VERSION = "0.21.0"
 
 local cfg = {}
 local st = {}
@@ -30,8 +30,19 @@ local resolveIntegrationMode
 local getIntegrationMode
 local usesNativePartSync
 local getActivePartsText
+local refreshRuntimePartModules
 local engineBridge = nil
+local ureOwnership = nil
+local urePartCurves = nil
+local ureBus = nil
+local ureEfi = nil
+local ureDiesel = nil
 pcall(function() engineBridge = rerequire("powertrain/ultraRealismEngineBridge") end)
+pcall(function() ureOwnership = rerequire("controller/ultra_realism/ownership") end)
+pcall(function() urePartCurves = rerequire("controller/ultra_realism/partCurves") end)
+pcall(function() ureBus = rerequire("controller/ultra_realism/bus") end)
+pcall(function() ureEfi = rerequire("controller/ultra_realism/induction_efi") end)
+pcall(function() ureDiesel = rerequire("controller/ultra_realism/induction_diesel") end)
 
 local function clamp(x, lo, hi)
   x = tonumber(x) or lo
@@ -281,6 +292,11 @@ local function publishEngineBridge(appliedTorqueFactor, throttle, fuelKgS, airKg
     afr = afr or cfg.stoichAFR,
     mixtureEfficiency = mixEff or 1,
     fuelDensityKgM3 = cfg.fuelDensityKgM3,
+    runtimeTorqueMult = st.runtimeTorqueMult or 1,
+    inductionFlowRatio = st.inductionFlowRatio or 1,
+    manifoldPressurePa = st.manifoldPressurePa or cfg.pressurePa or 101325,
+    forcedInductionBlend = st.forcedInductionBlend or 0,
+    nativePartSyncActive = usesNativePartSync() and (st.nativeOwnershipActive or false),
   })
   setElectricsValue("ure_integratedFuel", ultraActive and 1 or 0)
   setElectricsValue("ure_suppressFalseStallUI", cfg.suppressFalseStallUI and 1 or 0)
@@ -547,7 +563,24 @@ local function syncActivePartsState(dt)
   st.resolvedIntegrationMode = resolveIntegrationMode()
   st.carbSetupScanned = false
   st.enginePartsAnalyzed = false
+  refreshRuntimePartModules()
   return true
+end
+
+function refreshRuntimePartModules()
+  local entries = collectActivePartEntries()
+  local nativeSync = usesNativePartSync()
+  if ureOwnership and ureOwnership.refresh then
+    ureOwnership.refresh(entries, nativeSync)
+    st.nativeOwnershipActive = ureOwnership.anyOwned and ureOwnership.anyOwned() or false
+  end
+  if urePartCurves and urePartCurves.refresh then
+    st.runtimeTorqueMult = urePartCurves.refresh(entries, ureOwnership) or 1
+    st.partCurvesSignature = urePartCurves.getSignature and urePartCurves.getSignature() or ""
+  end
+  if ureBus and ureBus.publish then
+    ureBus.publish("partsChanged", {entries = entries, nativeSync = nativeSync})
+  end
 end
 
 local function getSelectedUltraOverrideText(slotType)
@@ -1231,8 +1264,11 @@ local function analyzeEngineParts()
 
   local camOverrideText = getSelectedUltraOverrideText("ultra_realism_camshaft")
   local nativeCamText = usesNativePartSync() and getBestNativePartText("camshaft") or nil
-  local camStage = inferCamStage(camOverrideText or nativeCamText or text)
-  st.nativeCamSynced = camOverrideText == nil and nativeCamText ~= nil
+  local camOwnedByNative = ureOwnership
+    and ureOwnership.shouldSkipHeuristic
+    and ureOwnership.shouldSkipHeuristic("ultra_realism_camshaft", usesNativePartSync())
+  local camStage = camOwnedByNative and 0 or inferCamStage(camOverrideText or nativeCamText or text)
+  st.nativeCamSynced = camOwnedByNative or (camOverrideText == nil and nativeCamText ~= nil)
 
   local intakeValvesPerCylinder = math.max(math.floor(valveCount * 0.5), 1)
   local perCylinderL = cfg.displacementL / math.max(cfg.injectorCount, 1)
@@ -2471,6 +2507,12 @@ local function update(dt)
   if cfg.fuelingMode == "carb" then
     fuelKgS, afr, venturiDP, airVelocity, jetSignal = calcFuelCarb(airM3s, airKgS, rho, throttle, throttleRate)
     injectorDuty = 0
+  elseif cfg.fuelingMode == "diesel" and ureDiesel and ureDiesel.calcFuel then
+    fuelKgS, afr, injectorDuty = ureDiesel.calcFuel(airKgS, throttle, tempC, cfg, st)
+    venturiDP, airVelocity, jetSignal = 0, 0, 0
+  elseif ureEfi and ureEfi.calcFuel then
+    fuelKgS, afr, injectorDuty = ureEfi.calcFuel(airKgS, throttle, tempC, cfg, st)
+    venturiDP, airVelocity, jetSignal = 0, 0, 0
   else
     fuelKgS, afr, injectorDuty = calcFuelInjection(airKgS, throttle, tempC)
     venturiDP, airVelocity, jetSignal = 0, 0, 0
@@ -2478,7 +2520,12 @@ local function update(dt)
 
   afr = clamp(afr, 4.0, 35.0)
   local lambda = afr / math.max(cfg.stoichAFR, 0.1)
-  local userTiming, mbt, timingError, timingEff, advanceRisk = calcIgnition(rpm, throttle, tempC, lambda)
+  local userTiming, mbt, timingError, timingEff, advanceRisk
+  if cfg.fuelingMode == "diesel" and ureDiesel and ureDiesel.calcIgnition then
+    userTiming, mbt, timingError, timingEff, advanceRisk = ureDiesel.calcIgnition(rpm, throttle, tempC, lambda, cfg, st)
+  else
+    userTiming, mbt, timingError, timingEff, advanceRisk = calcIgnition(rpm, throttle, tempC, lambda)
+  end
   local mixEff = mixtureEfficiency(lambda)
   local densityEff = finiteNonNegative(rho / math.max(cfg.referenceAirDensity, 0.001), 1)
   local pistonEff, compressionEff = calcPistonAndCompressionEfficiency(rpm, throttle, tempC, dt)
@@ -2490,8 +2537,13 @@ local function update(dt)
   if requestedAirKgS > 1e-6 then
     inductionFlowRatio = airKgS / requestedAirKgS
   end
+  st.inductionFlowRatio = inductionFlowRatio
   local rpmLoad = clamp(rpm / math.max(cfg.vePeakRPM, cfg.idleRPM + 200), 0, 1.15)
   local inductionLoad = clamp(throttle * (0.35 + 0.65 * rpmLoad), 0, 1)
+  st.forcedInductionBlend = (cfg.fuelingMode ~= "carb" or hasForcedInduction()) and inductionLoad or 0
+  if urePartCurves and urePartCurves.multAtRPM then
+    st.runtimeTorqueMult = urePartCurves.multAtRPM(rpm)
+  end
   local inductionTorqueEff = lerp(1, inductionFlowRatio, inductionLoad)
   if cfg.fuelingMode == "carb" and inductionLoad > 0.55 then
     inductionTorqueEff = inductionTorqueEff * lerp(1, inductionFlowRatio, (inductionLoad - 0.55) / 0.45)
@@ -2571,6 +2623,9 @@ local function update(dt)
   setElectricsValue("ure_venturiDemandRatio", st.venturiDemandRatio or 0)
   setElectricsValue("ure_choke", st.choke)
   setElectricsValue("ure_manifoldPressureKPa", manifoldPressurePa / 1000)
+  setElectricsValue("ure_runtimeTorqueMult", st.runtimeTorqueMult or 1)
+  setElectricsValue("ure_forcedInductionBlend", st.forcedInductionBlend or 0)
+  setElectricsValue("ure_nativeOwnershipActive", st.nativeOwnershipActive and 1 or 0)
   setElectricsValue("ure_airTempC", tempC)
 
   if not publishSlowTelemetry then
@@ -2808,6 +2863,11 @@ local function reset()
   restoreNativeEngineFriction()
   restoreNativeEngineTorqueState()
   if engineBridge and engineBridge.reset then engineBridge.reset() end
+  if ureOwnership and ureOwnership.reset then ureOwnership.reset() end
+  if urePartCurves and urePartCurves.reset then urePartCurves.reset() end
+  if ureBus and ureBus.reset then ureBus.reset() end
+  if ureEfi and ureEfi.reset then ureEfi.reset(st) end
+  if ureDiesel and ureDiesel.reset then ureDiesel.reset(st) end
   st = {
     choke = 0,
     knockRisk = 0,

@@ -763,7 +763,8 @@ local function updateTorque(device, dt)
 
   local ignitionCut = device.ignitionCutTime > 0
   local ureTorqueCoef = ureIntegration.resolveTorqueCoef(device)
-  torque = ((torque * device.forcedInductionCoef * throttleMap) + device.nitrousOxideTorque) * ureTorqueCoef * (ignitionCut and 0 or 1) * device.slowIgnitionErrorCoef * device.fastIgnitionErrorCoef
+  local ureForcedCoef = ureIntegration.resolveForcedInductionCoef(device)
+  torque = ((torque * ureForcedCoef * throttleMap) + device.nitrousOxideTorque) * ureTorqueCoef * (ignitionCut and 0 or 1) * device.slowIgnitionErrorCoef * device.fastIgnitionErrorCoef
   torque = min(torque, device.maxTorqueLimit) --limit output torque to a specified max, math.huge by default
 
   local lastInstantEngineLoad = device.instantEngineLoad

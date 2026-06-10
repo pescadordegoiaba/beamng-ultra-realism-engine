@@ -1,7 +1,7 @@
 # Resumo da sessão + Engenharia reversa — Ultra Realism Engine
 
 **Projeto:** [beamng-ultra-realism-engine](https://github.com/pescadordegoiaba/beamng-ultra-realism-engine)  
-**Versão final desta sessão:** **0.15.3**  
+**Versão final desta sessão:** **0.21.0** (roadmap A–F)  
 **Veículo de teste principal:** Bruckell Moonhawk (config *Bandit Speed*) + motor CEEP no mapa West Coast USA  
 **Data:** junho de 2026
 
@@ -693,10 +693,25 @@ Valores maiores de `multiCarbFlowBonus` → 6× mais forte no topo.
 
 ---
 
+## Apêndice A2 — Roadmap A–F (v0.21.0)
+
+| Fase | Versão | Entrega |
+|------|--------|---------|
+| **A** | 0.18.0 | `ownership.lua`, `partCurves.lua`, bridge `runtimeTorqueMult`, anti double-count |
+| **B** | 0.18.1 | `resolveForcedInductionCoef`, fork com `ureForcedCoef` |
+| **C** | 0.19.0 | `bus.lua`, delegação modular no controller |
+| **D** | 0.19.1 | `DIESEL_INJECTION_SLOT`, Ford labels expandidos, `BEAMNG_ROOT`, `test_fork_anchors.py` |
+| **E** | 0.20.0 | `induction_efi.lua`, `induction_diesel.lua`, testes WOT |
+| **F** | 0.21.0 | `ultra_combustionEngineHooks.lua`, validação completa, release |
+
+Novos módulos em `lua/vehicle/controller/ultra_realism/` e testes em `scripts/test_*`.
+
+---
+
 ## Apêndice B — Checklist pós-atualização
 
 - [ ] **Reload Mods** no BeamNG (ou reiniciar)
-- [ ] Confirmar log: `controller initialized v0.15.3`
+- [ ] Confirmar log: `controller initialized v0.21.0`
 - [ ] Confirmar: `URE fork active profile=ceep`
 - [ ] Testar 1× vs 6× na mesma reta, WOT, última marcha
 - [ ] Capturar `diag` em **alto RPM**, não em idle

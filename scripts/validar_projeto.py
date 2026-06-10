@@ -16,6 +16,12 @@ ULTRA_BRIDGE = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultraRealismEngineB
 ULTRA_CLASSIC = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultra_classic_combustionEngine.lua"
 ULTRA_STOCK = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultra_stock_combustionEngine.lua"
 ULTRA_INTEGRATION = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultra_combustionEngineIntegration.lua"
+ULTRA_HOOKS = MOD_DIR / "lua" / "vehicle" / "powertrain" / "ultra_combustionEngineHooks.lua"
+URE_OWNERSHIP = MOD_DIR / "lua" / "vehicle" / "controller" / "ultra_realism" / "ownership.lua"
+URE_PART_CURVES = MOD_DIR / "lua" / "vehicle" / "controller" / "ultra_realism" / "partCurves.lua"
+URE_BUS = MOD_DIR / "lua" / "vehicle" / "controller" / "ultra_realism" / "bus.lua"
+URE_EFI = MOD_DIR / "lua" / "vehicle" / "controller" / "ultra_realism" / "induction_efi.lua"
+URE_DIESEL = MOD_DIR / "lua" / "vehicle" / "controller" / "ultra_realism" / "induction_diesel.lua"
 MATERIALS = MOD_DIR / "vehicles" / "common" / "ultra_realism" / "carburetor_models.materials.json"
 INFO = MOD_DIR / "mod_info" / "info.json"
 ZIP_MAIN = KIT_DIR / "UltraRealismEngine_Prototype.zip"
@@ -37,7 +43,20 @@ def run(cmd: list[str], label: str) -> None:
 
 
 def check_lua_syntax() -> None:
-    for path in (LUA, ULTRA_ENGINE, ULTRA_BRIDGE, ULTRA_INTEGRATION, ULTRA_CLASSIC, ULTRA_STOCK):
+    for path in (
+        LUA,
+        ULTRA_ENGINE,
+        ULTRA_BRIDGE,
+        ULTRA_INTEGRATION,
+        ULTRA_HOOKS,
+        ULTRA_CLASSIC,
+        ULTRA_STOCK,
+        URE_OWNERSHIP,
+        URE_PART_CURVES,
+        URE_BUS,
+        URE_EFI,
+        URE_DIESEL,
+    ):
         if not path.exists():
             raise SystemExit(f"[FAIL] missing {path}")
         run(["luac", "-p", str(path.relative_to(KIT_DIR))], f"Lua syntax {path.name}")
@@ -49,6 +68,10 @@ def check_tests() -> None:
     run(["lua", "scripts/test_ceep_sync.lua"], "CEEP/Ford sync test")
     run(["lua", "scripts/test_ultra_combustion_engine.lua"], "ultra combustion engine test")
     run(["lua", "scripts/test_fueling_mode.lua"], "fueling mode detection test")
+    run(["lua", "scripts/test_double_count_torque.lua"], "double-count torque test")
+    run(["lua", "scripts/test_e2e_torque_chain.lua"], "e2e torque chain test")
+    run(["lua", "scripts/test_efi_wot.lua"], "EFI/diesel WOT test")
+    run([sys.executable, "scripts/test_fork_anchors.py"], "fork anchor test")
 
 
 def check_materials() -> None:
@@ -85,6 +108,14 @@ def check_lua_markers() -> None:
         "integratedFuel",
         "ultraRealismThrottleBody",
         "ultraRealismDieselInjection",
+        "refreshRuntimePartModules",
+        "runtimeTorqueMult",
+        "forcedInductionBlend",
+        "ure_runtimeTorqueMult",
+        "controller/ultra_realism/ownership",
+        "controller/ultra_realism/partCurves",
+        "controller/ultra_realism/induction_efi",
+        "controller/ultra_realism/induction_diesel",
     ]
     for marker in required:
         if marker not in text:
@@ -92,14 +123,29 @@ def check_lua_markers() -> None:
     if "for partName, partData in pairs(v.data.activePartsData)" in text:
         raise SystemExit("[FAIL] legacy activePartsData scan still present")
     integration_text = ULTRA_INTEGRATION.read_text(encoding="utf-8")
-    for marker in ("resolveTorqueCoef", "computeSpentEnergy", "integratedFuel"):
+    for marker in (
+        "resolveTorqueCoef",
+        "resolveRuntimeTorqueMult",
+        "resolveForcedInductionCoef",
+        "computeSpentEnergy",
+        "integratedFuel",
+    ):
         if marker not in integration_text:
             raise SystemExit(f"[FAIL] missing integration marker: {marker}")
+    bridge_text = ULTRA_BRIDGE.read_text(encoding="utf-8")
+    for marker in ("runtimeTorqueMult", "forcedInductionBlend", "inductionFlowRatio"):
+        if marker not in bridge_text:
+            raise SystemExit(f"[FAIL] missing bridge marker: {marker}")
     classic_text = ULTRA_CLASSIC.read_text(encoding="utf-8")
     if "ureIntegration.resolveTorqueCoef" not in classic_text:
         raise SystemExit("[FAIL] classic fork missing torque integration")
     if "ureIntegration.computeSpentEnergy" not in classic_text:
         raise SystemExit("[FAIL] classic fork missing fuel integration")
+    if "ureIntegration.resolveForcedInductionCoef" not in classic_text:
+        raise SystemExit("[FAIL] classic fork missing forced-induction integration")
+    stock_text = ULTRA_STOCK.read_text(encoding="utf-8")
+    if "ureIntegration.resolveForcedInductionCoef" not in stock_text:
+        raise SystemExit("[FAIL] stock fork missing forced-induction integration")
     for marker in ("torqueModUltraIntakeMult", "torqueModUltraIgnition"):
         if marker not in classic_text or marker not in ULTRA_STOCK.read_text(encoding="utf-8"):
             raise SystemExit(f"[FAIL] fork missing {marker} wiring")
@@ -109,8 +155,10 @@ def check_lua_markers() -> None:
 def check_version() -> None:
     info = json.loads(INFO.read_text(encoding="utf-8"))
     version = info.get("version", "")
-    if version != "0.17.2":
+    if version != "0.21.0":
         raise SystemExit(f"[FAIL] unexpected version {version}")
+    if 'MOD_VERSION = "0.21.0"' not in LUA.read_text(encoding="utf-8"):
+        raise SystemExit("[FAIL] controller MOD_VERSION mismatch")
     print(f"[OK] version {version}")
 
 
@@ -262,6 +310,9 @@ def main() -> None:
                     "lua/vehicle/powertrain/ultra_combustionEngine.lua",
                     "lua/vehicle/powertrain/ultraRealismEngineBridge.lua",
                     "lua/vehicle/powertrain/ultra_combustionEngineIntegration.lua",
+                    "lua/vehicle/powertrain/ultra_combustionEngineHooks.lua",
+                    "lua/vehicle/controller/ultra_realism/ownership.lua",
+                    "lua/vehicle/controller/ultra_realism/partCurves.lua",
                     "lua/vehicle/powertrain/ultra_classic_combustionEngine.lua",
                     "lua/vehicle/powertrain/ultra_stock_combustionEngine.lua",
                     "vehicles/common/ultra_realism/carburetor_models.materials.json",
