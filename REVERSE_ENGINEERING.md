@@ -1,6 +1,8 @@
 # Engenharia reversa — BeamNG.drive vs Ultra Realism Engine
 
-Documento técnico baseado na instalação em `/home/gullin/Games/BeamNG.drive/` e no mod **v0.14.9**.
+Documento técnico complementar ao mod **v0.15.3**.
+
+> **Guia completo:** [RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md](RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md) — timeline da sessão de debug, arquitetura v0.15.x, física de carburador, diagnósticos e limitações. Este arquivo cobre o loop physics/GFX de forma resumida.
 
 ## 1. Loop principal do veículo
 
@@ -87,9 +89,9 @@ URE roda em ordem **6500** (depois do vehicleController), portanto não impede a
 | Simular AFR real | Combustível nativo não lê `ure_afr` | Telemetria ok, consumo OEM |
 | Mod standalone | Precisa CEEP/Ford patchados | Slots/peças ausentes |
 
-## 4. Correções v0.14.9
+## 4. Evolução v0.14.9 → v0.15.3
 
-### A) Efeito proporcional à carga (`loadProportionalEngineEffect`)
+### v0.14.9 — Efeito proporcional à carga
 
 ```lua
 applied = lerp(1.0, rawTorqueFactor, blend)
@@ -98,16 +100,32 @@ blend = clamp(max(inductionLoad, venturiDemand, throttle*0.3) * gain, 0, 1)
 
 No idle (`demand≈0`), `applied → 1.0` — física de carburador só penaliza em carga real.
 
-### B) Guard de stall + `engineRunning` override
+### v0.15.0 — Fork completo do motor
 
-- `clearFalseStallState` — `isStalled=false`, `stallTimer=1`
-- `publishNativeRunningState` — `electrics.engineRunning=1` quando saudável
-- `updateWheelsIntermediate` — reaplica `outputTorqueState` entre passos
+- `ultra_combustionEngine.lua` roteia para `ultra_classic_combustionEngine` (CEEP) ou `ultra_stock_combustionEngine` (Ford).
+- `ultra_combustionEngineIntegration.lua` aplica `resolveTorqueCoef`, `computeSpentEnergy` e `postStallGuard`.
+- Combustível integrado: `spentEnergy` segue AFR/lambda quando `ureUltraEngine=true`.
 
-### C) Diag expandido
+### v0.15.1 — Crash no spawn
+
+Forward declarations em `ultraRealismEngine.lua` — `getIntegrationMode()` era chamada antes do binding local.
+
+### v0.15.2 — Performance
+
+- Cache de `ultraRealismEngineBridge` (sem `rerequire` por substep).
+- Telemetria throttled (~10 Hz), scan de peças a 0,5 s.
+- `debugLog`/`diagnosticLog` desligados por default.
+
+### v0.15.3 — Diferenciação 1× vs 6× carburador
+
+- `resolveAppliedTorqueFactor` usa déficit de fluxo, carga RPM e `carbFlowCalibrationCoef`.
+- CFM parcial por carburador, `multiCarbFlowBonus`, `sizingRatio` (demanda vs CFM nominal).
+- Gap offline ~12–15% torque em motor ~4.4 L WOT.
+
+### Diag expandido
 
 ```
-torque=... physics=... blend=... applied=...
+torque=... physics=... blend=... applied=... flow=... demand=... cfm=...
 ```
 
 - `torque` — fator físico bruto calculado

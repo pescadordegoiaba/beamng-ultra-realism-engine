@@ -1,6 +1,52 @@
-# UltraRealismEngine Prototype - BeamNG.drive
+# Ultra Realism Engine — BeamNG.drive Modkit
 
-Mod experimental para adicionar uma camada de simulacao mecanica mais realista em veiculos do BeamNG.drive.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-0.15.3-blue.svg)](UltraRealismEngine_Prototype/mod_info/info.json)
+
+Mod experimental para adicionar uma camada de simulacao mecanica mais realista em veiculos do [BeamNG.drive](https://www.beamng.com/game/): carburador (Venturi, CFM, mistura), injeção, clima, ignição, falhas progressivas e integração nativa com os packs **[CEEP] Classic Engine Expansion Pack** (JΛVI) e **Ford Engine Pack JITTERUSA**.
+
+> **Estado: protótipo avançado (v0.15.3)** — motor CEEP/Ford com fork completo, física de carburador aplicada via `outputTorqueState`, combustível integrado (AFR/`spentEnergy`). Ainda não é produto final: UI de stall nativa, tuning fino e dependência dos packs patchados permanecem.
+
+**Documentação**
+
+| Documento | Conteúdo |
+|-----------|----------|
+| [README.md](README.md) | Visão geral em inglês |
+| [RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md](RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md) | Resumo da sessão de debug + engenharia reversa BeamNG/URE |
+| [REVERSE_ENGINEERING.md](REVERSE_ENGINEERING.md) | Notas técnicas do loop physics/GFX (complementar) |
+| [CREDITS.md](CREDITS.md) | Licenças e terceiros |
+| [patched_mods/README.md](patched_mods/README.md) | Como patchar CEEP/Ford localmente |
+
+---
+
+## Novidades v0.15.x
+
+| Versão | Destaque |
+|--------|----------|
+| **0.15.3** | Diferenciação real 1× vs 6× carburador (calibração CFM vs cilindrada, blend por déficit de ar) |
+| **0.15.2** | Performance: cache do bridge, telemetria 10 Hz, scan de peças a 0,5 s |
+| **0.15.1** | Fix crash `getIntegrationMode` no spawn (forward declarations Lua) |
+| **0.15.0** | Forks completos `ultra_classic/stock_combustionEngine` com torque + combustível + stall |
+
+---
+
+## Arquitetura (v0.15.3)
+
+```
+Peças JBeam (CEEP/Ford patchados + ultra_realism_tuning.jbeam)
+        ↓
+ultraRealismEngine.lua (controller, order 6500)
+  • restrição venturi/CFM, AFR, clima, torque
+  • publishEngineBridge → ultraRealismEngineBridge
+  • engine.outputTorqueState
+        ↓
+ultra_combustionEngine.lua (roteador)
+  → ultra_classic_combustionEngine (CEEP)
+  → ultra_stock_combustionEngine (Ford/stock)
+        ↓
+ultra_combustionEngineIntegration.lua
+  • resolveTorqueCoef, computeSpentEnergy, postStallGuard
+```
 
 ## O que foi implementado
 
@@ -74,38 +120,47 @@ O **Matched Air Filter** calcula perda de carga pela area de fluxo, area de midi
 
 O antigo scan Artec nao e mais usado nem empacotado. O catalogo atual usa somente os oito modelos locais em `assets_sources/user_carburetors`; a tabela `carburetor_visual_manifest.json` registra o modelo, orientacao, escala, pivôs e malhas animadas usados por cada uma das 40 configuracoes.
 
-## Instalar
+## Build e instalar
 
-A pasta `/home/gullin/Games/BeamNG.drive/` e a instalacao do jogo. Nao instale mods dentro de `content/vehicles`.
-
-Use a pasta de usuario encontrada nesta maquina:
+Requisitos: Python 3, Lua, Blender (opcional, para `carburetor_models.dae`).
 
 ```bash
-cd /home/gullin/Downloads/beamng_super_realism_modkit
-blender --background --python scripts/gerar_modelos_carburadores_usuario.py
+git clone https://github.com/pescadordegoiaba/beamng-ultra-realism-engine.git
+cd beamng-ultra-realism-engine
+
 python3 scripts/gerar_zip_mod.py
-python3 scripts/instalar_mod_beamng.py --beamng-user-dir "/home/gullin/Games/Heroic/Prefixes/default/drive_c/users/gullin/AppData/Local/BeamNG/BeamNG.drive/current" --repo
+python3 scripts/validar_projeto.py 1
+
+# Patch CEEP/Ford (obrigatório para integração nativa)
+python3 scripts/integrar_packs_motores.py \
+  --ceep /caminho/classic_engine_expansion_pack.zip \
+  --ford /caminho/Ford_Engine_Pack_JITTERUSA.zip
+
+python3 scripts/instalar_mod_beamng.py --all-targets --with-packs
 ```
 
-`gerar_zip_mod.py` executa o Blender automaticamente quando ele esta instalado; a linha explicita acima serve para diagnosticar somente a geracao dos modelos.
-
-Ou informe diretamente a pasta de mods/repo:
+`gerar_zip_mod.py` executa o Blender automaticamente quando instalado. Para diagnosticar só os modelos:
 
 ```bash
-python3 scripts/instalar_mod_beamng.py --mods-dir "/home/gullin/Games/Heroic/Prefixes/default/drive_c/users/gullin/AppData/Local/BeamNG/BeamNG.drive/current/mods/repo"
+blender --background --python scripts/gerar_modelos_carburadores_usuario.py
 ```
 
-Ou tente deteccao automatica:
+Detecção automática da pasta de mods:
 
 ```bash
 python3 scripts/instalar_mod_beamng.py --auto
 ```
 
-O ZIP final fica em:
+O ZIP final fica em `UltraRealismEngine_Prototype.zip` (não versionado).
 
-```text
-/home/gullin/Downloads/beamng_super_realism_modkit/UltraRealismEngine_Prototype.zip
-```
+### Integração CEEP / Ford
+
+Sem os packs **patchados**, o controller não aparece na árvore de peças nativa desses motores e o fork de motor não é usado.
+
+1. Obtenha os mods originais no fórum BeamNG (CEEP — JΛVI; Ford — JITTERUSA).
+2. Siga [patched_mods/README.md](patched_mods/README.md).
+3. No jogo: **desative** ZIPs originais; use **somente** patchados + `UltraRealismEngine_Prototype.zip`.
+4. **Reload Mods** após atualizar.
 
 ## Ativar no jogo
 
@@ -116,12 +171,41 @@ O ZIP final fica em:
 5. Se estiver usando os packs CEEP/Ford patchados, escolha o motor normalmente. O frame **Engine** contem apenas o hook; abra **Top End**, **Bottom End**, **Camshaft**, **Carburetor**, **Short Block**, **Engine Variant** ou a categoria nativa equivalente para selecionar as pecas.
 6. Nao selecione uma antiga peca `Ultra Realism Automatic Integration` em configuracoes salvas. Ela foi removida e o motor patchado ja carrega o controller.
 
+## O que funciona hoje
+
+- Spawn estável com motor CEEP/Ford (crash Lua corrigido em v0.15.1).
+- Performance jogável em v0.15.2+ (sem `rerequire` por substep, telemetria throttled).
+- **40 carburadores** com geometria, CFM e contagem (1× / 2× / 3× / 4× / 6×) distintos.
+- Diferença de torque **~12–15%** entre 1× e 6× em motor ~4.4 L (teste offline e Moonhawk in-game após v0.15.3).
+- Torque real via `outputTorqueState` + fork `resolveTorqueCoef`.
+- Combustível integrado: `spentEnergy` segue AFR/lambda do controller quando `ureUltraEngine=true`.
+- Telemetria `ure_*`, logs `diag` (opcional), assets visuais animados (8 OBJs do autor).
+- Detecção automática: cilindrada, idle/redline, modo carb/EFI, peças CEEP/Ford.
+
 ## Telemetria
 
 No console de Vehicle Lua do carro atual:
 
 ```lua
 dump(electrics.values)
+```
+
+Log `diag` (ativar `diagnosticLog: true` no JBeam — **desligado por default** em v0.15.2+):
+
+```text
+UltraRealismEngine|diag parts=... carb=... torque=... blend=... flow=... demand=... cfm=...
+```
+
+**Dica:** compare logs em **WOT alto RPM**, não em idle (`blend≈0` no idle é intencional).
+
+Parâmetros de tuning no controller:
+
+```json
+"carbFlowCalibrationCoef": 0.82,
+"multiCarbFlowBonus": 1.06,
+"telemetryInterval": 0.1,
+"debugLog": false,
+"diagnosticLog": false
 ```
 
 Procure variaveis com prefixo `ure_`, por exemplo:
@@ -176,10 +260,51 @@ Snippet manual:
 jbeam_snippets/controller_ultra_realism_snippet.jbeam
 ```
 
-## Limitacoes reais
+## Testes offline
 
-Isto e um controller auxiliar, nao uma substituicao completa do motor fisico interno do BeamNG. A partir da versao 0.14.1, o fator fisico calculado e aplicado em `intakeAirDensityCoef` no passo de fisica seguinte ao `powertrain.update()`. A atribuicao e absoluta, nao cumulativa, e deixa `outputTorqueState` reservado para o sistema nativo de dano. Assim, area de Venturi, CFM, mistura, ignicao, compressao, temperatura e falhas alteram o torque real sem multiplicar indefinidamente a curva dos motores CEEP/Ford.
+```bash
+lua scripts/test_carburetor_physics.lua      # 1× vs 6× venturi/torque/blend
+lua scripts/test_ceep_sync.lua               # sync peças CEEP/Ford
+lua scripts/test_ultra_combustion_engine.lua # bridge, fork, cache
+```
 
-Os 40 nomes comerciais nao sao apresentados como scans exatos de fabrica. Os oito modelos visuais sao equivalentes fornecidos pelo autor e sao escalados pela geometria fisica de cada configuracao.
+## Limitações conhecidas
 
-O efeito fisico de suspensao usa `obj:setBeamSpringDamp` apenas em beams que parecem amortecedores/molas por nome/propriedades. Se um veiculo nao expuser esses beams de forma identificavel, a suspensao continua com telemetria sem alteracao fisica direta.
+| Área | Situação |
+|------|----------|
+| Mensagem UI `vehicle.engine.isStalling` | Pode aparecer com mistura saudável; URE mitiga via `postStallGuard`, não remove `guihooks` |
+| Packs obrigatórios | CEEP/Ford patchados + ZIP principal |
+| Duplicatas JBeam | Conflitos com outros mods (tires, oilpan CEEP) — avisos no log |
+| Idle / transientes | Tuning de mistura ainda em evolução |
+| UI in-game | Sem app de tuning; parâmetros no JBeam/Lua |
+| Produto final | Protótipo para desenvolvedores e entusiastas, não substituto OEM completo |
+
+A partir da **v0.15.0**, o torque físico passa por fork dedicado (`ultra_classic/stock_combustionEngine`) via `outputTorqueState` e `resolveTorqueCoef`. O `intakeAirDensityCoef` é resetado no GFX pelo motor nativo — **não** é o canal principal do URE.
+
+Os 40 nomes comerciais não são scans exatos de fábrica. Os oito modelos visuais são equivalentes fornecidos pelo autor e escalados pela geometria física de cada configuração.
+
+O efeito físico de suspensão usa `obj:setBeamSpringDamp` apenas em beams identificáveis como amortecedores/molas. Se um veículo não expuser esses beams, a suspensão continua com telemetria sem alteração física direta.
+
+Detalhes: [RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md](RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md) §9.
+
+---
+
+## Versão
+
+Canônica: `UltraRealismEngine_Prototype/mod_info/info.json` → **0.15.3**
+
+---
+
+## Contribuir
+
+Issues e PRs são bem-vindos.
+
+- Mantenha `scripts/validar_projeto.py` passando.
+- Não commite ZIPs de mods de terceiros (CEEP/Ford).
+- Atualize [CREDITS.md](CREDITS.md) se adicionar assets externos.
+
+---
+
+## Licença
+
+Código original: [MIT](LICENSE). Terceiros: [CREDITS.md](CREDITS.md).
