@@ -1,72 +1,116 @@
 # Ultra Realism Engine — BeamNG.drive Modkit
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.15.3-blue.svg)](UltraRealismEngine_Prototype/mod_info/info.json)
+[![Version](https://img.shields.io/badge/version-0.21.1-blue.svg)](UltraRealismEngine_Prototype/mod_info/info.json)
+[![BeamNG](https://img.shields.io/badge/BeamNG.drive-0.36%2B-green.svg)](COMPATIBILITY.json)
+[![Release](https://img.shields.io/github/v/release/pescadordegoiaba/beamng-ultra-realism-engine?label=release)](https://github.com/pescadordegoiaba/beamng-ultra-realism-engine/releases)
 
-Camada de simulação mecânica para motores a combustão no [BeamNG.drive](https://www.beamng.com/game/): carburador (Venturi, CFM, mistura), injeção, clima, ignição, falhas progressivas e integração nativa com os packs **[CEEP] Classic Engine Expansion Pack** (JΛVI) e **Ford Engine Pack JITTERUSA**.
+Mechanical simulation layer for combustion engines in [BeamNG.drive](https://www.beamng.com/game/): carburetor physics (Venturi, CFM, mixture), injection, climate, ignition, progressive failures, and native integration with **[CEEP] Classic Engine Expansion Pack** (JΛVI) and **Ford Engine Pack JITTERUSA**.
 
-> **Estado: protótipo avançado (v0.15.3)** — motor CEEP/Ford com fork completo, física de carburador aplicada via `outputTorqueState`, combustível integrado (AFR/`spentEnergy`). Ainda não é produto final: UI de stall nativa, tuning fino e dependência dos packs patchados permanecem.
+> **Status: advanced prototype (v0.21.1)** — full CEEP/Ford engine fork, carb physics via `outputTorqueState`, integrated fuel (AFR/`spentEnergy`), modular runtime (`ownership`, `partCurves`, EFI/diesel induction). Not a finished commercial product.
 
-**Documentação**
+**Documentation**
 
-| Documento | Conteúdo |
-|-----------|----------|
-| [README_PT-BR.md](README_PT-BR.md) | Guia completo em português (peças, instalação, telemetria) |
-| [RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md](RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md) | Resumo da sessão de debug + engenharia reversa BeamNG/URE |
-| [REVERSE_ENGINEERING.md](REVERSE_ENGINEERING.md) | Notas técnicas do loop physics/GFX (complementar) |
-| [CREDITS.md](CREDITS.md) | Licenças e terceiros |
-| [patched_mods/README.md](patched_mods/README.md) | Como patchar CEEP/Ford localmente |
-
----
-
-## Novidades v0.15.x
-
-| Versão | Destaque |
-|--------|----------|
-| **0.15.3** | Diferenciação real 1× vs 6× carburador (calibração CFM vs cilindrada, blend por déficit de ar) |
-| **0.15.2** | Performance: cache do bridge, telemetria 10 Hz, scan de peças a 0,5 s |
-| **0.15.1** | Fix crash `getIntegrationMode` no spawn (forward declarations Lua) |
-| **0.15.0** | Forks completos `ultra_classic/stock_combustionEngine` com torque + combustível + stall |
+| Document | Content |
+|----------|---------|
+| [README_PT-BR.md](README_PT-BR.md) | Full guide in Portuguese |
+| [docs/RELEASE_v0.21.1.md](docs/RELEASE_v0.21.1.md) | Release notes + legal notice for patched packs |
+| [COMPATIBILITY.json](COMPATIBILITY.json) | BeamNG version matrix |
+| [RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md](RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md) | Debug session + reverse engineering notes |
+| [patched_mods/README.md](patched_mods/README.md) | How to patch CEEP/Ford locally |
 
 ---
 
-## O que há neste repositório
+## Releases (pre-built ZIPs)
 
-| Caminho | Conteúdo |
-|---------|----------|
-| `UltraRealismEngine_Prototype/` | Mod instalável: controller Lua, forks de motor, JBeam (40 carburadores), assets Collada |
-| `scripts/` | Build, validação, testes offline, integração CEEP/Ford, instalador |
-| `assets_sources/` | OBJs de carburador do autor (8 famílias visuais) |
-| `jbeam_snippets/` | Snippet manual para patch em outros veículos |
-| `patched_mods/` | **Somente README** — ZIPs patchados não são redistribuídos |
+Latest: **[v0.21.1](https://github.com/pescadordegoiaba/beamng-ultra-realism-engine/releases/tag/v0.21.1)**
 
-**Não versionado:** `UltraRealismEngine_Prototype.zip`, `patched_mods/*.zip` (gerados localmente).
+| Asset | Description |
+|-------|-------------|
+| `UltraRealismEngine_Prototype.zip` | Main URE mod (~3 MB) |
+| `classic_engine_expansion_pack.zip` | **Patched** CEEP with native URE slots (~475 MB) |
+| `Ford_Engine_Pack_JITTERUSA.zip` | **Patched** Ford pack with native URE slots (~299 MB) |
+
+**BeamNG.drive compatibility:** `0.36.0+` — tested on **`0.38.3.0`**. See [COMPATIBILITY.json](COMPATIBILITY.json).
+
+> Patched CEEP/Ford ZIPs are derivative works. You must legally own the originals from [BeamNG resources](https://www.beamng.com/resources/). **Disable** the original CEEP/Ford zips in Mod Manager — use only the patched versions from this release.
+
+### One-command install (Linux / Heroic)
+
+```bash
+git clone https://github.com/pescadordegoiaba/beamng-ultra-realism-engine.git
+cd beamng-ultra-realism-engine
+chmod +x scripts/instalar_tudo.sh
+./scripts/instalar_tudo.sh --download --all-targets
+```
+
+The script downloads all three ZIPs from GitHub Releases and copies them to every detected `mods/repo` folder.
+
+**Other install options:**
+
+```bash
+# Local ZIPs already built
+./scripts/instalar_tudo.sh --all-targets
+
+# Python installer
+python3 scripts/instalar_mod_beamng.py --all-targets --with-packs
+
+# Custom mods folder
+./scripts/instalar_tudo.sh --mods-dir "$HOME/.local/share/BeamNG/BeamNG.drive/current/mods/repo"
+```
+
+**After install:** Mod Manager → disable original CEEP/Ford → enable the 3 URE zips → **Reload Mods**.
 
 ---
 
-## Arquitetura (v0.15.3)
+## What's new in v0.21.x
+
+| Version | Highlight |
+|---------|-----------|
+| **0.21.1** | CEEP i4 turbo enabled, FI throttle-body routing, parts-scan cache, short-block slot dedup |
+| **0.21.0** | Roadmap A–F: `ownership`, `partCurves`, `bus`, EFI/diesel induction, combustion hooks |
+| **0.15.3** | Real 1× vs 6× carb differentiation (CFM calibration, air-deficit blend) |
+
+Full notes: [docs/RELEASE_v0.21.1.md](docs/RELEASE_v0.21.1.md)
+
+---
+
+## Repository layout
+
+| Path | Content |
+|------|---------|
+| `UltraRealismEngine_Prototype/` | Installable mod: Lua controller, engine forks, JBeam (40 carbs), Collada assets |
+| `scripts/` | Build, validation, offline tests, CEEP/Ford integration, installers |
+| `assets_sources/` | Author-supplied carburetor OBJs (8 visual families) |
+| `patched_mods/` | README only in git — patched ZIPs ship via **GitHub Releases** |
+| `downloads/` | Optional cache for `instalar_tudo.sh --download` |
+
+---
+
+## Architecture (v0.21.1)
 
 ```
-Peças JBeam (CEEP/Ford patchados + ultra_realism_tuning.jbeam)
+JBeam parts (patched CEEP/Ford + ultra_realism_tuning.jbeam)
         ↓
 ultraRealismEngine.lua (controller, order 6500)
-  • restrição venturi/CFM, AFR, clima, torque
+  • venturi/CFM restriction, AFR, climate, torque
+  • ultra_realism/ownership, partCurves, bus, induction_*
   • publishEngineBridge → ultraRealismEngineBridge
-  • engine.outputTorqueState
         ↓
-ultra_combustionEngine.lua (roteador)
+ultra_combustionEngine.lua (router)
   → ultra_classic_combustionEngine (CEEP)
   → ultra_stock_combustionEngine (Ford/stock)
         ↓
-ultra_combustionEngineIntegration.lua
+ultra_combustionEngineIntegration.lua + Hooks
   • resolveTorqueCoef, computeSpentEnergy, postStallGuard
+  • resolveForcedInductionCoef
 ```
 
 ---
 
-## Build rápido
+## Build from source
 
-Requisitos: Python 3, Lua, Blender (opcional, para `carburetor_models.dae`).
+Requirements: Python 3, Lua, Blender (optional, for `carburetor_models.dae`).
 
 ```bash
 git clone https://github.com/pescadordegoiaba/beamng-ultra-realism-engine.git
@@ -75,103 +119,70 @@ cd beamng-ultra-realism-engine
 python3 scripts/gerar_zip_mod.py
 python3 scripts/validar_projeto.py 1
 
-# Patch CEEP/Ford (obrigatório para integração nativa)
+# Patch CEEP/Ford (requires legally owned originals)
 python3 scripts/integrar_packs_motores.py \
-  --ceep /caminho/classic_engine_expansion_pack.zip \
-  --ford /caminho/Ford_Engine_Pack_JITTERUSA.zip
+  --ceep /path/to/classic_engine_expansion_pack.zip \
+  --ford /path/to/Ford_Engine_Pack_JITTERUSA.zip
 
-python3 scripts/instalar_mod_beamng.py --all-targets --with-packs
+./scripts/instalar_tudo.sh --all-targets
 ```
 
-### Integração CEEP / Ford
-
-Sem os packs **patchados**, o controller não aparece na árvore de peças nativa desses motores e o fork de motor não é usado.
-
-1. Obtenha os mods originais no fórum BeamNG (CEEP — JΛVI; Ford — JITTERUSA).
-2. Siga [patched_mods/README.md](patched_mods/README.md).
-3. No jogo: **desative** ZIPs originais; use **somente** patchados + `UltraRealismEngine_Prototype.zip`.
-4. **Reload Mods** após atualizar.
+Without **patched** CEEP/Ford packs, the controller does not appear in those engines' native part trees and the engine fork is not used.
 
 ---
 
-## O que funciona hoje
+## What works today
 
-- Spawn estável com motor CEEP/Ford (crash Lua corrigido em v0.15.1).
-- Performance jogável em v0.15.2+ (sem `rerequire` por substep, telemetria throttled).
-- **40 carburadores** com geometria, CFM e contagem (1× / 2× / 3× / 4× / 6×) distintos.
-- Diferença de torque **~12–15%** entre 1× e 6× em motor ~4.4 L (teste offline e Moonhawk in-game após v0.15.3).
-- Torque real via `outputTorqueState` + fork `resolveTorqueCoef`.
-- Combustível integrado: `spentEnergy` segue AFR/lambda do controller quando `ureUltraEngine=true`.
-- Telemetria `ure_*`, logs `diag` (opcional), assets visuais animados (8 OBJs do autor).
-- Detecção automática: cilindrada, idle/redline, modo carb/EFI, peças CEEP/Ford.
+- Stable CEEP/Ford spawn with full engine fork
+- Playable performance (parts-scan cache, 0.5 s sync interval, debug logs off by default)
+- **40 carburetors** with distinct geometry, CFM, and count (1× / 2× / 3× / 4× / 6×)
+- ~12–15% torque difference between 1× and 6× on ~4.4 L engines
+- Real torque via `outputTorqueState` + `resolveTorqueCoef`
+- Integrated fuel: `spentEnergy` follows controller AFR/lambda when `ureUltraEngine=true`
+- CEEP i4 flathead turbo path (v0.21.1)
+- `ure_*` telemetry, animated carb visuals (8 author OBJs)
+- Auto-detect: displacement, idle/redline, carb/EFI mode, CEEP/Ford parts
 
-## Limitações conhecidas
+## Known limitations
 
-| Área | Situação |
-|------|----------|
-| Mensagem UI `vehicle.engine.isStalling` | Pode aparecer com mistura saudável; URE mitiga via `postStallGuard`, não remove `guihooks` |
-| Packs obrigatórios | CEEP/Ford patchados + ZIP principal |
-| Duplicatas JBeam | Conflitos com outros mods (tires, oilpan CEEP) — avisos no log |
-| Idle / transientes | Tuning de mistura ainda em evolução |
-| UI in-game | Sem app de tuning; parâmetros no JBeam/Lua |
-| Produto final | Protótipo para desenvolvedores e entusiastas, não substituto OEM completo |
+| Area | Status |
+|------|--------|
+| `vehicle.engine.isStalling` UI | May appear with healthy mixture; mitigated via `postStallGuard` |
+| Required packs | Patched CEEP/Ford + main URE zip |
+| JBeam duplicates | Conflicts with other mods (tires, CEEP oilpan) — log warnings |
+| In-game UI | No tuning app; parameters in JBeam/Lua |
+| Patched pack redistribution | Release assets require owning originals legally |
 
-Detalhes: [RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md](RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md) §9.
+Details: [RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md](RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md) §9.
 
 ---
 
-## Testes offline
+## Offline tests
 
 ```bash
-lua scripts/test_carburetor_physics.lua      # 1× vs 6× venturi/torque/blend
-lua scripts/test_ceep_sync.lua               # sync peças CEEP/Ford
-lua scripts/test_ultra_combustion_engine.lua # bridge, fork, cache
+python3 scripts/validar_projeto.py 1
+lua scripts/test_parts_scan_cache.lua
+python3 scripts/test_i4_turbo_integration.py
 ```
 
 ---
 
-## Telemetria in-game
+## Version
 
-```lua
-dump(electrics.values)  -- chaves ure_*
-```
-
-Log `diag` (ativar `diagnosticLog: true` no JBeam — **desligado por default** em v0.15.2+):
-
-```text
-UltraRealismEngine|diag parts=... carb=... torque=... blend=... flow=... demand=... cfm=...
-```
-
-**Dica:** compare logs em **WOT alto RPM**, não em idle (`blend≈0` no idle é intencional).
-
-Parâmetros de tuning no controller:
-
-```json
-"carbFlowCalibrationCoef": 0.82,
-"multiCarbFlowBonus": 1.06,
-"telemetryInterval": 0.1,
-"debugLog": false,
-"diagnosticLog": false
-```
+Canonical: `UltraRealismEngine_Prototype/mod_info/info.json` → **0.21.1**
 
 ---
 
-## Versão
+## Contributing
 
-Canônica: `UltraRealismEngine_Prototype/mod_info/info.json` → **0.15.3**
+Issues and PRs welcome.
 
----
-
-## Contribuir
-
-Issues e PRs são bem-vindos.
-
-- Mantenha `scripts/validar_projeto.py` passando.
-- Não commite ZIPs de mods de terceiros (CEEP/Ford).
-- Atualize [CREDITS.md](CREDITS.md) se adicionar assets externos.
+- Keep `scripts/validar_projeto.py` passing.
+- Do not commit third-party mod sources (CEEP/Ford originals).
+- Update [CREDITS.md](CREDITS.md) when adding external assets.
 
 ---
 
-## Licença
+## License
 
-Código original: [MIT](LICENSE). Terceiros: [CREDITS.md](CREDITS.md).
+Original code: [MIT](LICENSE). Third parties: [CREDITS.md](CREDITS.md).

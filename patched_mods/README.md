@@ -1,6 +1,12 @@
 # Packs CEEP / Ford (não incluídos no repositório)
 
-Esta pasta guarda **ZIPs patchados** gerados por `scripts/integrar_packs_motores.py`. Eles **não** são versionados no GitHub porque são obras derivadas de mods de terceiros que você precisa possuir legalmente antes de patchar.
+Esta pasta guarda **ZIPs patchados** gerados por `scripts/integrar_packs_motores.py`. Eles **não** ficam no histórico Git (obras derivadas), mas são distribuídos nas **[GitHub Releases](https://github.com/pescadordegoiaba/beamng-ultra-realism-engine/releases)** junto com o mod principal — você ainda precisa possuir legalmente os mods originais CEEP/Ford.
+
+**Instalação rápida da release:**
+
+```bash
+./scripts/instalar_tudo.sh --download --all-targets
+```
 
 ## Pré-requisitos
 

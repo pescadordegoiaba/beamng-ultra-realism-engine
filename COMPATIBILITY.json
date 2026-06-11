@@ -1,0 +1,28 @@
+{
+  "ureVersion": "0.21.1",
+  "beamngMinVersion": "0.36.0",
+  "beamngTestedVersion": "0.38.3.0",
+  "beamngRecommendedVersion": "0.38.x",
+  "releaseTag": "v0.21.1",
+  "releaseDate": "2026-06-10",
+  "requiredMods": [
+    {
+      "id": "ultra_realism",
+      "file": "UltraRealismEngine_Prototype.zip",
+      "required": true
+    },
+    {
+      "id": "ceep_patched",
+      "file": "classic_engine_expansion_pack.zip",
+      "required": true,
+      "note": "Patched CEEP — disable the original CEEP zip in Mod Manager"
+    },
+    {
+      "id": "ford_patched",
+      "file": "Ford_Engine_Pack_JITTERUSA.zip",
+      "required": true,
+      "note": "Patched Ford pack — disable the original Ford zip in Mod Manager"
+    }
+  ],
+  "legalNote": "CEEP and Ford release assets are patched derivative works. You must legally own the original mods from BeamNG resources before using the patched zips."
+}

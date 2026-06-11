@@ -1,11 +1,13 @@
 # Ultra Realism Engine — BeamNG.drive Modkit
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-0.15.3-blue.svg)](UltraRealismEngine_Prototype/mod_info/info.json)
+[![Version](https://img.shields.io/badge/version-0.21.1-blue.svg)](UltraRealismEngine_Prototype/mod_info/info.json)
+[![BeamNG](https://img.shields.io/badge/BeamNG.drive-0.36%2B-green.svg)](COMPATIBILITY.json)
+[![Release](https://img.shields.io/github/v/release/pescadordegoiaba/beamng-ultra-realism-engine?label=release)](https://github.com/pescadordegoiaba/beamng-ultra-realism-engine/releases)
 
 Mod experimental para adicionar uma camada de simulacao mecanica mais realista em veiculos do [BeamNG.drive](https://www.beamng.com/game/): carburador (Venturi, CFM, mistura), injeção, clima, ignição, falhas progressivas e integração nativa com os packs **[CEEP] Classic Engine Expansion Pack** (JΛVI) e **Ford Engine Pack JITTERUSA**.
 
-> **Estado: protótipo avançado (v0.15.3)** — motor CEEP/Ford com fork completo, física de carburador aplicada via `outputTorqueState`, combustível integrado (AFR/`spentEnergy`). Ainda não é produto final: UI de stall nativa, tuning fino e dependência dos packs patchados permanecem.
+> **Estado: protótipo avançado (v0.21.1)** — motor CEEP/Ford com fork completo, módulos runtime (`ownership`, `partCurves`, EFI/diesel), física de carburador via `outputTorqueState`, combustível integrado (AFR/`spentEnergy`). Ainda não é produto final.
 
 **Documentação**
 
@@ -15,18 +17,55 @@ Mod experimental para adicionar uma camada de simulacao mecanica mais realista e
 | [RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md](RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md) | Resumo da sessão de debug + engenharia reversa BeamNG/URE |
 | [REVERSE_ENGINEERING.md](REVERSE_ENGINEERING.md) | Notas técnicas do loop physics/GFX (complementar) |
 | [CREDITS.md](CREDITS.md) | Licenças e terceiros |
+| [docs/RELEASE_v0.21.1.md](docs/RELEASE_v0.21.1.md) | Notas da release + aviso legal dos packs patchados |
+| [COMPATIBILITY.json](COMPATIBILITY.json) | Versão do BeamNG compatível |
 | [patched_mods/README.md](patched_mods/README.md) | Como patchar CEEP/Ford localmente |
 
 ---
 
-## Novidades v0.15.x
+## Releases (ZIPs já compilados)
+
+Última release: **[v0.21.1](https://github.com/pescadordegoiaba/beamng-ultra-realism-engine/releases/tag/v0.21.1)**
+
+| Arquivo | Descrição |
+|---------|-----------|
+| `UltraRealismEngine_Prototype.zip` | Mod principal URE (~3 MB) |
+| `classic_engine_expansion_pack.zip` | CEEP **patchado** com slots nativos URE (~475 MB) |
+| `Ford_Engine_Pack_JITTERUSA.zip` | Ford pack **patchado** com slots nativos URE (~299 MB) |
+
+**BeamNG.drive compatível:** `0.36.0+` — testado em **`0.38.3.0`**.
+
+> Os ZIPs CEEP/Ford da release são obras derivadas. Você precisa possuir legalmente os mods originais no [BeamNG resources](https://www.beamng.com/resources/). **Desative** os ZIPs originais no Mod Manager.
+
+### Instalação completa (script)
+
+```bash
+git clone https://github.com/pescadordegoiaba/beamng-ultra-realism-engine.git
+cd beamng-ultra-realism-engine
+chmod +x scripts/instalar_tudo.sh
+./scripts/instalar_tudo.sh --download --all-targets
+```
+
+O script `instalar_tudo.sh` baixa os 3 ZIPs da release GitHub e copia para todas as pastas `mods/repo` detectadas (Linux nativo + Heroic/Wine).
+
+Alternativas:
+
+```bash
+./scripts/instalar_tudo.sh --all-targets          # ZIPs já presentes em patched_mods/
+python3 scripts/instalar_mod_beamng.py --all-targets --with-packs
+```
+
+Após instalar: Mod Manager → desative CEEP/Ford originais → ative os 3 ZIPs URE → **Reload Mods**.
+
+---
+
+## Novidades v0.21.x
 
 | Versão | Destaque |
 |--------|----------|
+| **0.21.1** | Turbo i4 CEEP, throttle body em FI, cache de peças, short block sem duplicata |
+| **0.21.0** | Roadmap A–F: ownership, partCurves, bus, induction EFI/diesel, hooks |
 | **0.15.3** | Diferenciação real 1× vs 6× carburador (calibração CFM vs cilindrada, blend por déficit de ar) |
-| **0.15.2** | Performance: cache do bridge, telemetria 10 Hz, scan de peças a 0,5 s |
-| **0.15.1** | Fix crash `getIntegrationMode` no spawn (forward declarations Lua) |
-| **0.15.0** | Forks completos `ultra_classic/stock_combustionEngine` com torque + combustível + stall |
 
 ---
 
@@ -122,6 +161,14 @@ O antigo scan Artec nao e mais usado nem empacotado. O catalogo atual usa soment
 
 ## Build e instalar
 
+### Opção A — Release pré-compilada (recomendado)
+
+```bash
+./scripts/instalar_tudo.sh --download --all-targets
+```
+
+### Opção B — Compilar do código-fonte
+
 Requisitos: Python 3, Lua, Blender (opcional, para `carburetor_models.dae`).
 
 ```bash
@@ -131,12 +178,12 @@ cd beamng-ultra-realism-engine
 python3 scripts/gerar_zip_mod.py
 python3 scripts/validar_projeto.py 1
 
-# Patch CEEP/Ford (obrigatório para integração nativa)
+# Patch CEEP/Ford (obrigatório — mods originais de posse legal)
 python3 scripts/integrar_packs_motores.py \
   --ceep /caminho/classic_engine_expansion_pack.zip \
   --ford /caminho/Ford_Engine_Pack_JITTERUSA.zip
 
-python3 scripts/instalar_mod_beamng.py --all-targets --with-packs
+./scripts/instalar_tudo.sh --all-targets
 ```
 
 `gerar_zip_mod.py` executa o Blender automaticamente quando instalado. Para diagnosticar só os modelos:
@@ -291,7 +338,7 @@ Detalhes: [RESUMO_SESSAO_E_ENGENHARIA_REVERSA.md](RESUMO_SESSAO_E_ENGENHARIA_REV
 
 ## Versão
 
-Canônica: `UltraRealismEngine_Prototype/mod_info/info.json` → **0.15.3**
+Canônica: `UltraRealismEngine_Prototype/mod_info/info.json` → **0.21.1**
 
 ---
 
