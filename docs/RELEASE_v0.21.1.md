@@ -3,6 +3,16 @@
 **Data:** 2026-06-10  
 **BeamNG.drive:** `0.36.0+` (testado em `0.38.3.0`)
 
+## Publicar esta release (mantenedor)
+
+Se os ZIPs já estão compilados localmente:
+
+```bash
+./scripts/publicar_release.sh
+```
+
+Isso cria/atualiza a release `v0.21.1` no GitHub com os 3 assets. Requer `gh auth login`.
+
 ## Downloads
 
 | Arquivo | Descrição | Tamanho aprox. |
