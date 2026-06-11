@@ -19,10 +19,13 @@ guarded and the controller falls back to telemetry instead of crashing.
 local M = {}
 M.type = "auxiliary"
 M.defaultOrder = 6500
-local MOD_VERSION = "0.21.0"
+local MOD_VERSION = "0.21.1"
 
 local cfg = {}
 local st = {}
+local installedPartsCache = nil
+local activePartEntriesCache = nil
+local partsScanCount = 0
 local engine = nil
 local lastLogT = 0
 local inferCarbDefinitionFromPartName
@@ -393,7 +396,12 @@ local function registerInstalledPart(installed, slotName, partName, partPath)
   installed[tostring(key)] = tostring(partName)
 end
 
-local function getInstalledParts()
+local function invalidateInstalledPartsCache()
+  installedPartsCache = nil
+  activePartEntriesCache = nil
+end
+
+local function buildInstalledParts()
   local installed = {}
 
   if v and v.config then
@@ -440,9 +448,18 @@ local function getInstalledParts()
   return installed
 end
 
+local function getInstalledParts()
+  if installedPartsCache then
+    return installedPartsCache
+  end
+  partsScanCount = partsScanCount + 1
+  installedPartsCache = buildInstalledParts()
+  return installedPartsCache
+end
+
 local function computeActivePartsSignature()
   local chunks = {}
-  for slotName, partName in pairs(getInstalledParts()) do
+  for slotName, partName in pairs(buildInstalledParts()) do
     table.insert(chunks, slotName .. "=" .. partName)
   end
   table.sort(chunks)
@@ -505,6 +522,9 @@ local function activePartText(partName, partData)
 end
 
 local function collectActivePartEntries()
+  if activePartEntriesCache then
+    return activePartEntriesCache
+  end
   local entries = {}
   local seen = {}
 
@@ -523,6 +543,7 @@ local function collectActivePartEntries()
     end
   end
 
+  activePartEntriesCache = entries
   return entries
 end
 
@@ -558,6 +579,7 @@ local function syncActivePartsState(dt)
 
   local signature = computeActivePartsSignature()
   if signature == st.activePartsSignature then return false end
+  invalidateInstalledPartsCache()
   st.activePartsSignature = signature
   st.activePartsCount = #collectActivePartEntries()
   st.resolvedIntegrationMode = resolveIntegrationMode()
@@ -2678,6 +2700,7 @@ local function update(dt)
   setElectricsValue("ure_engineMaxTorqueNm", st.autoMaxTorqueNm or getEngineMaxTorque() or 0)
   setElectricsValue("ure_activeCarbPartName", st.activeCarbPartName or "")
   setElectricsValue("ure_activePartsCount", st.activePartsCount or 0)
+  setElectricsValue("ure_partsScanCount", partsScanCount)
   setElectricsValue("ure_activePartsSignature", st.activePartsSignature or "")
   setElectricsValue("ure_partsDetectionSource", st.partsDetectionSource or 0)
   setElectricsValue("ure_outputTorqueStateApplied", st.appliedViaOutputTorqueState and 1 or 0)
@@ -2858,6 +2881,8 @@ local function update(dt)
 end
 
 local function reset()
+  invalidateInstalledPartsCache()
+  partsScanCount = 0
   restoreSuspensionBeams()
   engine = getMainEngine()
   restoreNativeEngineFriction()
@@ -2934,7 +2959,7 @@ local function init(jbeamData)
   cfg.debugLog = bool(jbeamData.debugLog, false)
   cfg.diagnosticLog = bool(jbeamData.diagnosticLog, false)
   cfg.telemetryInterval = safeNumber(jbeamData.telemetryInterval, 0.1)
-  cfg.partsSyncInterval = safeNumber(jbeamData.partsSyncInterval, 0.5)
+  cfg.partsSyncInterval = math.max(0.5, safeNumber(jbeamData.partsSyncInterval, 0.5))
   cfg.allowStall = bool(jbeamData.allowStall, false)
   cfg.allowLockup = bool(jbeamData.allowLockup, false)
   cfg.failureAggression = safeNumber(jbeamData.failureAggression, 0.45)

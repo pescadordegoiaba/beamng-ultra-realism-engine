@@ -328,8 +328,8 @@ AUTO_CONFIG = {
     "preferCarburetor": False,
     "autoTuneVECurve": True,
     "autoDetectCarbSetup": True,
-    "debugLog": True,
-    "diagnosticLog": True,
+    "debugLog": False,
+    "diagnosticLog": False,
     "climatePreset": "game_environment",
     "useBeamNGEnvironment": True,
 }
@@ -337,7 +337,7 @@ AUTO_CONFIG = {
 AUTO_CONFIG_CEEP = {
     **AUTO_CONFIG,
     "integrationMode": "ceep",
-    "preferCarburetor": False,
+    "preferCarburetor": True,
 }
 AUTO_CONFIG_FORD = {
     **AUTO_CONFIG,

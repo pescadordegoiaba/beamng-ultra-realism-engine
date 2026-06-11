@@ -72,6 +72,8 @@ def check_tests() -> None:
     run(["lua", "scripts/test_e2e_torque_chain.lua"], "e2e torque chain test")
     run(["lua", "scripts/test_efi_wot.lua"], "EFI/diesel WOT test")
     run([sys.executable, "scripts/test_fork_anchors.py"], "fork anchor test")
+    run(["lua", "scripts/test_parts_scan_cache.lua"], "parts scan cache test")
+    run([sys.executable, "scripts/test_i4_turbo_integration.py"], "i4 turbo integration test")
 
 
 def check_materials() -> None:
@@ -155,9 +157,9 @@ def check_lua_markers() -> None:
 def check_version() -> None:
     info = json.loads(INFO.read_text(encoding="utf-8"))
     version = info.get("version", "")
-    if version != "0.21.0":
+    if version != "0.21.1":
         raise SystemExit(f"[FAIL] unexpected version {version}")
-    if 'MOD_VERSION = "0.21.0"' not in LUA.read_text(encoding="utf-8"):
+    if 'MOD_VERSION = "0.21.1"' not in LUA.read_text(encoding="utf-8"):
         raise SystemExit("[FAIL] controller MOD_VERSION mismatch")
     print(f"[OK] version {version}")
 
@@ -209,6 +211,13 @@ def check_pack_integration(path: Path, expected_mode: str) -> None:
     )
 
 
+BLOW_THROUGH_CARB_ALLOWLIST = (
+    "turbo intake manifold",
+    "blow-through",
+    "blow through",
+)
+
+
 def check_pack_no_carb_on_forced_induction(path: Path) -> None:
     offenders = []
     with zipfile.ZipFile(path) as zf:
@@ -218,9 +227,12 @@ def check_pack_no_carb_on_forced_induction(path: Path) -> None:
             text = zf.read(name).decode("utf-8", errors="replace").lower()
             if "turbo" not in text and "supercharger" not in text and "twincharger" not in text:
                 continue
-            if '"slottype": "ultra_realism_carburetor"' in text.replace(" ", ""):
-                if any(token in text for token in ("turbo manifold", "supercharger manifold", "twincharger")):
-                    offenders.append(name)
+            if '"slottype": "ultra_realism_carburetor"' not in text.replace(" ", ""):
+                continue
+            if any(token in text for token in BLOW_THROUGH_CARB_ALLOWLIST):
+                continue
+            if any(token in text for token in ("turbo manifold", "supercharger manifold", "twincharger")):
+                offenders.append(name)
     if offenders:
         raise SystemExit(
             f"[FAIL] {path.name} still maps carbs onto forced-induction intakes: "

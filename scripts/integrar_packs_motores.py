@@ -83,7 +83,23 @@ CEEP_CARB_LABELS = {
     "carburetor",
     "carburetors",
     "cross-ram carburetors",
+    "1-barrel carburetor",
+    "2-barrel carburetor",
+    "1x1-barrel carburetor",
+    "1x2-barrel carburetor",
+    "2x1-barrel carburetors",
+    "2x2-barrel carburetor",
 }
+CEEP_FI_SLOT_TYPE_TOKENS = (
+    "_tc_",
+    "turbo",
+    "twincharger",
+    "supercharger",
+    "_sc_",
+    "procharger",
+    "blower",
+    "ecoboost",
+)
 CEEP_INTAKE_GEOMETRY_LABELS = {
     "intake manifold",
     "intake",
@@ -1119,11 +1135,65 @@ def ford_intake_supports_throttle_body(name: str) -> bool:
 
 
 def target_is_forced_induction(inventory: dict, target: str) -> bool:
+    lowered = target.lower()
+    if any(token in lowered for token in CEEP_FI_SLOT_TYPE_TOKENS):
+        return True
     for record in inventory["definitions"].get(target, []):
         label = record.get("name", "").strip().lower()
         if any(token in label for token in CEEP_FORCED_INDUCTION_LABELS):
             return True
+        if any(token in label for token in ("turbo", "supercharger", "twincharger", "blower")):
+            return True
+    for owner in inventory["owners"].get(target, []):
+        for row in owner.get("rows", []):
+            if row[0] != target:
+                continue
+            desc = row[2].strip().lower()
+            if desc in CEEP_FORCED_INDUCTION_LABELS:
+                return True
+            if any(token in desc for token in ("turbo", "supercharger", "twincharger", "blower")):
+                return True
     return False
+
+
+def ceep_intake_supports_throttle_body(name: str, slot_type_name: str = "") -> bool:
+    lowered = f"{name} {slot_type_name}".lower()
+    return any(
+        keyword in lowered
+        for keyword in (
+            "turbo",
+            "supercharger",
+            "twincharger",
+            "blower",
+            "procharger",
+            "ecoboost",
+            "efi",
+            "throttle body",
+            "itb",
+            "forced induction",
+        )
+    )
+
+
+def ceep_throttle_body_owner_specs(inventory: dict) -> list[dict]:
+    intake_types = set(native_target_types(inventory, CEEP_INTAKE_GEOMETRY_LABELS))
+    specs: list[dict] = []
+    seen: set[tuple[str, str]] = set()
+    for intake_type in sorted(intake_types):
+        if not target_is_forced_induction(inventory, intake_type):
+            continue
+        for record in inventory["definitions"].get(intake_type, []):
+            identity = (record["filename"], record["partKey"])
+            if identity in seen:
+                continue
+            seen.add(identity)
+            specs.append(record)
+    return specs
+
+
+def is_canonical_short_block_owner(part_key: str) -> bool:
+    lowered = part_key.lower()
+    return "_short_block_stock" in lowered or lowered.endswith("_stock")
 
 
 def append_unique_slot(rows: list[list], slot_row: list) -> list[list]:
@@ -1351,14 +1421,22 @@ def native_parts_files(mode: str, parts: dict[str, dict]) -> dict[str, bytes]:
     return files
 
 
-def patch_ceep_hierarchy(text: str, inventory: dict) -> tuple[str, dict[str, int]]:
+def patch_ceep_hierarchy(
+    text: str,
+    inventory: dict,
+    filename: str,
+) -> tuple[str, dict[str, int]]:
     short_types = set(native_target_types(inventory, {"short block"}))
     head_types = set(native_target_types(inventory, {"cylinder head"}))
     carb_types = set(native_target_types(inventory, CEEP_CARB_LABELS))
     stats: dict[str, int] = {}
 
     text, parts, rows = patch_matching_parts(
-        text, lambda _key, block: slot_type(block) in short_types, MISSING_SHORT_BLOCK_SLOTS
+        text,
+        lambda key, block: (
+            slot_type(block) in short_types and is_canonical_short_block_owner(key)
+        ),
+        MISSING_SHORT_BLOCK_SLOTS,
     )
     stats["shortBlockOwners"] = parts
     stats["shortBlockRows"] = rows
@@ -1372,6 +1450,24 @@ def patch_ceep_hierarchy(text: str, inventory: dict) -> tuple[str, dict[str, int
     )
     stats["carbOwners"] = parts
     stats["carbRows"] = rows
+    tb_parts = 0
+    tb_rows = 0
+    tb_owner_specs = {
+        (spec["filename"], spec["partKey"]): spec
+        for spec in ceep_throttle_body_owner_specs(inventory)
+    }
+    for start, end in reversed(part_blocks(text)):
+        key = part_key(text, start)
+        if tb_owner_specs.get((filename, key)) is None:
+            continue
+        block = text[start:end]
+        block, added = add_slots_to_block(block, [THROTTLE_BODY_SLOT])
+        if added:
+            text = text[:start] + block + text[end:]
+            tb_parts += 1
+            tb_rows += added
+    stats["throttleBodyIntakeOwners"] = tb_parts
+    stats["throttleBodyIntakeRows"] = tb_rows
     text, parts, rows = patch_matching_parts(
         text,
         lambda _key, block: (
@@ -1484,6 +1580,338 @@ def patch_ford_hierarchy(
     return text, stats
 
 
+I4_PARTS_PATH = (
+    "vehicles/common/CEEP/ceep_engine_jbeam/c_common_engine_parts/"
+    "I4_engines/c_common_lhead_i4_parts.jbeam"
+)
+I4_TC_MANIFOLDS_PATH = (
+    "vehicles/common/CEEP/ceep_engine_jbeam/c_common_TC/"
+    "I4_TC_manifolds/c_common_TC_manifolds_lhead_i4.jbeam"
+)
+I4_TC_INTAKES_PATH = (
+    "vehicles/common/CEEP/ceep_engine_jbeam/c_common_TC/"
+    "I4_TC_manifolds/c_common_TC_intakes_lhead_i4.jbeam"
+)
+I4_TC_WASTEGATES_PATH = (
+    "vehicles/common/CEEP/ceep_engine_jbeam/c_common_TC/"
+    "I4_TC_manifolds/c_common_TC_wastegates_lhead_i4.jbeam"
+)
+I4_TURBO_INTAKE_REPLACEMENT = """"c_tc_lhead_stock_intake_i4": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Turbocharger",
+        "value":0,
+    },
+    "slotType" : "c_lhead_stock_intake_i4",
+"slots": [
+        ["type", "default", "description"],
+        ["c_tc_lhead_stock_manifold_i4","c_tc_lhead_stock_manifold_i4", "Turbo Manifold", {"coreSlot":true}],
+        ["c_na_lhead_aftm_header_i4","c_na_lhead_aftm_header_i4_castlog", "Exhaust Manifold", {"coreSlot":true}],
+    ],
+    "mainEngine":{
+        "blowerRPMVariance":0,
+        "blowerRPMVarianceFrequency":0,
+    },
+},"""
+I4_TC_MANIFOLDS_JBEAM = """{
+"c_tc_lhead_stock_manifold_i4": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Single Blow-Through Turbocharger",
+        "value":4200,
+    },
+    "slotType" : "c_tc_lhead_stock_manifold_i4",
+"slots": [
+        ["type", "default", "description"],
+        ["c_tc_lhead_sturbo_filter_i4","c_tc_lhead_sturbo_filter_i4_cone","Intake Filter"],
+        ["c_tc_lhead_sturbo_exh_i4","c_tc_lhead_sturbo_exh_i4_downpipe","Turbo Exhaust Pipe", {"coreSlot":true}],
+        ["c_tc_lhead_sturbo_carb_i4","c_tc_lhead_sturbo_carb_i4_singlecarb_1brl","Turbo Intake Manifold", {"coreSlot":true}],
+        ["c_turbo_whine","c_turbo_whine_powerwhistle","Turbo Whine", {"coreSlot":true}],
+        ["c_tc_lhead_wastegate_sturbo_i4","c_tc_lhead_wastegate_sturbo_i4_variable","Wastegate", {"coreSlot":true}],
+    ],
+    "turbocharger": {
+        "bovSoundFileName":"event:>Vehicle>Forced_Induction>turbo_01>turbo_bov_race",
+        "hissLoopEvent":"event:>Vehicle>Forced_Induction>Turbo_07>turbo_hiss_race",
+        "whineLoopEvent":"event:>Vehicle>Forced_Induction>Turbo>Spin>turbo_spin_powerwhistle_01",
+        "turboSizeCoef": 0.72,
+        "bovSoundVolumeCoef":"$bovSoundVolumeCoef",
+        "hissVolumePerPSI": 0.055,
+        "whineVolumePer10kRPM":0.38,
+        "whinePitchPer10kRPM":0.32,
+        "wastegateStart":"$wastegateStart",
+        "wastegateLimit":"$=$wastegateStart+1",
+        "maxAntilagPower": 24000,
+        "maxExhaustPower": 150000,
+        "backPressureCoef": 0.00042,
+        "frictionCoef": 48,
+        "inertia":38,
+        "pressureRatePSI": 36,
+        "damageThresholdTemperature": 800,
+        "pressurePSI":[
+            [0,         -2.5],
+            [30000,     -1.5],
+            [60000,        4],
+            [90000,        8],
+            [150000,      14],
+            [200000,      26],
+            [250000,      34],
+        ],
+        "engineDef":[
+            [0,     0.0,      0.0],
+            [650,   0.05,    0.09],
+            [1400,  0.28,    0.18],
+            [2000,  0.66,    0.62],
+            [2500,  0.82,    0.96],
+            [3000,  0.86,    0.98],
+            [4000,  0.85,    0.99],
+            [5000,  0.80,    1.00],
+            [6000,  0.66,    1.00],
+            [7000,  0.48,    1.00],
+            [8000,  0.28,    1.00],
+        ],
+    },
+    "mainEngine":{
+        "turbocharger":"turbocharger",
+        "$*instantAfterFireCoef": 1.40,
+        "$*sustainedAfterFireCoef":1.50,
+        "$+idleRPMRoughness": 90,
+        "deformGroups_turbo":["mainEngine_turbo","mainEngine_intercooler","mainEngine_piping"]
+    },
+    "soundConfig": {
+        "$+intakeMuffling":0.05,
+        "$+mainGain":-1,
+    },
+    "soundConfigExhaust": {
+        "$+maxLoadMix": 0.1,
+        "$+minLoadMix": 0.05,
+        "$+mainGain": -1.5,
+        "$+offLoadGain": 0.05,
+    },
+    "vehicleController": {
+        "revMatchThrottle":0.2,
+        "clutchLaunchStartRPM":2100,
+    },
+    "flexbodies": [
+         ["mesh", "[group]:", "nonFlexMaterials"],
+         ["c_i4_lhead_intake_manifold_single", ["classic_engine"]],
+         ["c_i6_lhead_tc_single", ["classic_turbocharger","classic_engine"]],
+    ],
+"props":[
+    ["func","mesh",   "idRef:","idX:","idY:",  "baseRotation",  "rotation",                      "translation", "min", "max", "offset", "multiplier"],
+["turboSpin", "c_i6_lhead_tc_single_spin", "e2r","e2l","e4r",  {"x":0, "y":0, "z":0}, {"x":0, "y":1, "z":0}, {"x":0, "y":0, "z":0},   -360, 360, 0, 1, {"baseTranslationGlobal":{"x":-0.300, "y":-1.360, "z":0.670}}],
+],
+    "nodes": [
+        ["id", "posX", "posY", "posZ"],
+        {"selfCollision":true},
+        {"collision":true},
+        {"frictionCoef":0.5},
+        {"nodeMaterial":"|NM_METAL"},
+        {"group":"classic_turbocharger"},
+        {"nodeWeight":13.0},
+        ["trb1", -0.30, -1.36, 0.67],
+    ],
+    "beams": [
+        ["id1:", "id2:"],
+        {"beamPrecompression":1, "beamType":"|NORMAL", "beamLongBound":1, "beamShortBound":1},
+        {"deformLimitExpansion":1.1},
+        {"beamSpring":2501000,"beamDamp":125},
+        {"beamDeform":60000,"beamStrength":"FLT_MAX"},
+        {"deformLimitExpansion":""},
+        {"deformGroup":"classic_turbocharger", "deformationTriggerRatio":0.001}
+        ["trb1", "e4r", {"isExhaust":"mainEngine"}],
+        ["trb1", "e1l"],
+        ["trb1", "e1r"],
+        ["trb1", "e2l"],
+        ["trb1", "e2r"],
+        ["trb1", "e3l"],
+        ["trb1", "e3r"],
+        ["trb1", "e4l"],
+        {"beamSpring":1501000,"beamDamp":125},
+        {"beamDeform":30000,"beamStrength":"FLT_MAX"},
+        ["trb1", "airb"],
+        ["trb1", "mnfld"],
+        {"deformGroup":""},
+        {"beamPrecompression":1, "beamType":"|NORMAL", "beamLongBound":1, "beamShortBound":1},
+    ],
+},
+}
+"""
+I4_TC_INTAKES_JBEAM = """{
+"c_tc_lhead_sturbo_carb_i4_singlecarb_1brl": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"1x1-Barrel Carburetor",
+        "value":125,
+    },
+    "slotType" : "c_tc_lhead_sturbo_carb_i4",
+    "slots": [
+        ["type","default","description"],
+    ],
+    "mainEngine":{
+        "torqueModIntake":[
+            ["rpm", "torque"],
+            [0      0],
+            [500    0],
+            [1000   0],
+            [1500   0],
+            [2000  -2],
+            [2500  -5],
+            [3000  -8],
+            [3500  -12],
+            [4000  -18],
+            [4500  -25],
+            [5000  -35],
+            [5500  -45],
+            [6000  -55],
+            [6500  -65],
+            [7000, -88],
+            [8000, -105],
+        ],
+    },
+    "soundConfig": {
+        "$+intakeMuffling": 0.20,
+        "$+mainGain":-2.0,
+        "$+maxLoadMix":  0.05,
+        "$+minLoadMix":  0.10,
+    },
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+        ["c_i4_lhead_stock_intk_carb_1brl", ["classic_engine","classic_manifold","classic_intake"]],
+        ["c_i4_lhead_intake_manifold_single", ["classic_engine", "classic_manifold"]],
+        ["c_i6_lhead_tc_intkpipe_singlecarb", ["classic_manifold","classic_intake","classic_turbocharger"]],
+        ["c_i4_lhead_fuelpump", ["classic_engine"]],
+    ],
+    "props": [
+        ["func"      , "mesh"              , "idRef:", "idX:", "idY:"            , "baseRotation"        , "rotation"                 , "translation"        , "min", "max", "offset", "multiplier"],
+        ["throttle"     ,"c_i4_lhead_stock_intk_carb_1brl_throttle", "e1r","e1l","e2r",  {"x":-90, "y":0, "z":0} , {"x":90, "y":0, "z":0}    , {"x":0.0, "y":0, "z":0}, 0, 1, 0, 1, {"baseTranslationGlobal":{"x":-0.2513, "y":-1.4, "z":0.7714}}],
+    ],
+    "nodes": [
+         ["id", "posX", "posY", "posZ"],
+         {"selfCollision":false},
+         {"collision":true},
+         {"nodeMaterial":"|NM_METAL"},
+         {"frictionCoef":0.5},
+         {"group":"classic_intake"},
+         {"engineGroup":"engine_intake"},
+         {"nodeWeight":3.5},
+         ["airb", -0.25, -1.39, 0.88],
+         {"group":"classic_manifold"},
+         {"nodeWeight":16},
+         ["mnfld",  -0.25, -1.39, 0.75],
+         {"engineGroup":""},
+         {"group":""},
+    ],
+    "beams": [
+          ["id1:", "id2:"],
+          {"beamPrecompression":1, "beamType":"|NORMAL", "beamLongBound":1.0, "beamShortBound":1.0},
+          {"beamSpring":2501000,"beamDamp":150},
+          {"beamDeform":65000,"beamStrength":"FLT_MAX"},
+          {"deformGroup":"mainEngine_intake", "deformationTriggerRatio":0.01}
+          ["airb","mnfld"],
+          ["airb","e1r"],
+          ["airb","e2r"],
+          ["airb","e3r"],
+          ["airb","e4r"],
+          ["airb","e1l"],
+          ["airb","e2l"],
+          ["airb","e3l", {"name":"engine"}],
+          ["airb","e4l"],
+          {"beamSpring":1501000,"beamDamp":150},
+          {"beamDeform":88000,"beamStrength":"FLT_MAX"},
+          {"deformGroup":"mainEngine_intake", "deformationTriggerRatio":0.01}
+          ["mnfld","e1r"],
+          ["mnfld","e2r"],
+          ["mnfld","e3r"],
+          ["mnfld","e4r"],
+          ["mnfld","e1l"],
+          ["mnfld","e2l"],
+          ["mnfld","e3l"],
+          ["mnfld","e4l"],
+          {"deformGroup":""}
+          {"beamPrecompression":1, "beamType":"|NORMAL", "beamLongBound":1.0, "beamShortBound":1.0},
+    ],
+},
+"c_tc_lhead_sturbo_filter_i4_cone": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Cone Filter",
+        "value":45,
+    },
+    "slotType" : "c_tc_lhead_sturbo_filter_i4",
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+        ["c_i4_lhead_stock_intk_single_1brl_filter_stock", ["classic_engine","classic_intake"]],
+    ],
+},
+"c_tc_lhead_sturbo_exh_i4_downpipe": {
+    "information":{
+        "authors":"BeamNG",
+        "name":"Turbo Downpipe",
+        "value":120,
+    },
+    "slotType" : "c_tc_lhead_sturbo_exh_i4",
+    "flexbodies": [
+        ["mesh", "[group]:", "nonFlexMaterials"],
+        ["c_i6_lhead_tc_single_exh", ["classic_turbocharger","classic_engine"]],
+    ],
+},
+}
+"""
+I4_TC_WASTEGATES_JBEAM = """{
+"c_tc_lhead_wastegate_sturbo_i4_variable": {
+    "information":{
+        "authors":"JAVI",
+        "name":"Variable Wastegate",
+        "value":50,
+    },
+    "slotType" : "c_tc_lhead_wastegate_sturbo_i4",
+"slots": [
+        ["type", "default", "description"],
+        ["c_wastegate_bov","c_wastegate_bov_flutter2","Blow-Off Sound", {"coreSlot":true}],
+        ["c_turbo_antilag","","Anti-Lag System"],
+],
+    "flexbodies": [
+         ["mesh", "[group]:", "nonFlexMaterials"],
+         ["c_i6_lhead_tc_single_wastegate", ["classic_turbocharger","classic_engine"]],
+    ],
+"variables": [
+        ["name", "type", "unit", "category", "default", "min", "max", "title", "description"],
+        ["$wastegateStart", "range", "psi", "Forced Induction", 14, 1, 24, "Wastegate Pressure", "Pressure at which the wastegate begins to open", {"stepDis":0.5, "subCategory":"Turbocharger"}],
+    ],
+    "turbocharger": {
+        "wastegateLimit":"$=$wastegateStart+1",
+"wastegateStart":"$wastegateStart",
+    },
+},
+}
+"""
+I4_TURBO_COMMENT_RE = re.compile(
+    r"/\*\s*\n"
+    r'"c_tc_lhead_stock_intake_i4"\s*:\s*\{.*?\n\},\s*\n\*/',
+    re.DOTALL,
+)
+
+
+def patch_ceep_i4_turbo(entries: dict[str, bytes]) -> dict[str, int]:
+    stats = {"i4TurboIntakeEnabled": 0, "i4TurboFilesAdded": 0}
+    parts_data = entries.get(I4_PARTS_PATH)
+    if parts_data is not None:
+        text = parts_data.decode("utf-8", errors="replace")
+        patched, count = I4_TURBO_COMMENT_RE.subn(I4_TURBO_INTAKE_REPLACEMENT, text, count=1)
+        if count:
+            entries[I4_PARTS_PATH] = patched.encode("utf-8")
+            stats["i4TurboIntakeEnabled"] = 1
+    for path, payload in (
+        (I4_TC_MANIFOLDS_PATH, I4_TC_MANIFOLDS_JBEAM),
+        (I4_TC_INTAKES_PATH, I4_TC_INTAKES_JBEAM),
+        (I4_TC_WASTEGATES_PATH, I4_TC_WASTEGATES_JBEAM),
+    ):
+        if path not in entries:
+            entries[path] = payload.encode("utf-8")
+            stats["i4TurboFilesAdded"] += 1
+    return stats
+
+
 def carb_asset_entries() -> dict[str, bytes]:
     assets = {}
     for relative in CARB_ASSET_PATHS:
@@ -1512,6 +1940,11 @@ def patch_zip(source: Path, output: Path, mode: str, config: dict) -> dict:
         infos = {info.filename: info for info in zin.infolist()}
 
     inventory = archive_inventory(entries)
+    if mode == "ceep":
+        i4_turbo_stats = patch_ceep_i4_turbo(entries)
+        inventory = archive_inventory(entries)
+    else:
+        i4_turbo_stats = {}
     native_parts, native_categories = generate_native_parts(mode, inventory)
     generated_native_files = native_parts_files(mode, native_parts)
     modified_files = 0
@@ -1526,7 +1959,7 @@ def patch_zip(source: Path, output: Path, mode: str, config: dict) -> dict:
         text, _, _ = patch_ultra_powertrain(text, mode)
         text, controller_count = patch_controllers(text, config)
         if mode == "ceep":
-            text, hierarchy = patch_ceep_hierarchy(text, inventory)
+            text, hierarchy = patch_ceep_hierarchy(text, inventory, filename)
         else:
             text, hierarchy = patch_ford_hierarchy(text, inventory, filename)
         for key, value in hierarchy.items():
@@ -1557,6 +1990,7 @@ def patch_zip(source: Path, output: Path, mode: str, config: dict) -> dict:
         "sidedraftCarburetorCenterDropM": SIDEDRAFT_CARB_CENTER_DROP_M,
         "carburetorAsset": CARB_ASSET_PATHS[0],
         "hierarchy": dict(hierarchy_totals),
+        "i4Turbo": i4_turbo_stats,
     }
     entries[INTEGRATION_MARKER] = json.dumps(marker, indent=2).encode("utf-8")
 
